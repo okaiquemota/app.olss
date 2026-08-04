@@ -1,118 +1,201 @@
 import { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Users, 
-  Settings, 
-  LogOut, 
-  Zap,
+import {
   Activity,
+  FileText,
   History,
-  StickyNote
+  LayoutDashboard,
+  LogOut,
+  Map,
+  Menu,
+  Settings,
+  StickyNote,
+  Users,
+  X,
+  Zap,
 } from 'lucide-react';
 
-import { Relatorios } from './pages/Relatorios';
 import { Clientes } from './pages/Clientes';
-import { Pendencias } from './pages/Pendencias';
-import { Monitoramento } from './pages/Monitoramento';
+import { HistoricoRelatorios } from './pages/HistoricoRelatorios';
 import { MapaUsinas } from './pages/MapaUsinas';
-import { Map } from 'lucide-react'; // Traz o ícone de mapa também
-// Futuras telas que vamos criar:
-// import { Monitoramento } from './pages/Monitoramento';
-// import { HistoricoRelatorios } from './pages/HistoricoRelatorios';
+import { Monitoramento } from './pages/Monitoramento';
+import { Pendencias } from './pages/Pendencias';
+import { Relatorios } from './pages/Relatorios';
+
+const MENU_SECTIONS = [
+  {
+    label: 'Rotina',
+    items: [
+      { id: 'dashboard', icon: LayoutDashboard, label: 'Visão Geral' },
+      { id: 'pendencias', icon: StickyNote, label: 'Lembretes' },
+    ],
+  },
+  {
+    label: 'Operação',
+    items: [
+      { id: 'clientes', icon: Users, label: 'Cadastros' }, // <-- NOME ALTERADO AQUI
+      { id: 'mapa', icon: Map, label: 'Mapa de Usinas' },
+      { id: 'monitoramento', icon: Activity, label: 'Monitoramento' },
+    ],
+  },
+  {
+    label: 'Faturamento',
+    items: [
+      { id: 'relatorios', icon: FileText, label: 'Relatórios' },
+      { id: 'historico', icon: History, label: 'Histórico Mensal' },
+    ],
+  },
+];
+
+const PAGE_TITLES = {
+  dashboard: 'Visão Geral',
+  pendencias: 'Lembretes',
+  clientes: 'Cadastros', // <-- NOME ALTERADO AQUI TAMBÉM
+  mapa: 'Mapa de Usinas',
+  monitoramento: 'Monitoramento',
+  relatorios: 'Relatórios',
+  historico: 'Histórico Mensal',
+  configuracoes: 'Configurações',
+};
+
+function MenuItem({ id, icon: Icone, label, telaAtiva, onSelect }) {
+  const ativo = telaAtiva === id;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(id)}
+      className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors cursor-pointer font-medium text-[13px] border-l-2 ${
+        ativo
+          ? 'bg-green-50 text-green-800 border-green-700'
+          : 'text-gray-600 border-transparent hover:bg-gray-100 hover:text-gray-900'
+      }`}
+    >
+      <Icone size={17} strokeWidth={ativo ? 2.3 : 1.8} />
+      <span className="truncate">{label}</span>
+    </button>
+  );
+}
 
 function App() {
   const [telaAtiva, setTelaAtiva] = useState('clientes');
+  const [menuAberto, setMenuAberto] = useState(true);
+  const [relatorioClienteInicialId, setRelatorioClienteInicialId] = useState(null);
 
-  const MenuItem = ({ id, icone: Icone, texto }) => (
-    <button
-      onClick={() => setTelaAtiva(id)}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer font-medium text-[13px] ${
-        telaAtiva === id 
-          ? 'bg-white text-green-700 font-bold shadow-sm' 
-          : 'text-green-50 hover:bg-green-600 hover:text-white'
-      }`}
-    >
-      <Icone size={18} strokeWidth={telaAtiva === id ? 2.5 : 1.8} />
-      {texto}
-    </button>
-  );
+  const selecionarTela = (id) => {
+    setTelaAtiva(id);
+    if (window.innerWidth < 768) setMenuAberto(false);
+  };
+
+  const abrirCriacaoRelatorio = (clienteId) => {
+    setRelatorioClienteInicialId(clienteId);
+    setTelaAtiva('relatorios');
+  };
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] font-sans overflow-hidden antialiased text-sm">
-      
-      {/* MENU LATERAL */}
-      <aside className="w-64 bg-green-700 text-white flex flex-col justify-between shadow-lg z-10 shrink-0">
-        <div>
-          <div className="p-6 flex items-center gap-3 mb-2">
-            <div className="bg-white p-2 rounded-xl text-green-700 shadow-sm">
-              <Zap size={20} fill="currentColor" />
+    <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden antialiased text-sm text-gray-800">
+      {menuAberto && (
+        <button
+          type="button"
+          aria-label="Fechar menu"
+          onClick={() => setMenuAberto(false)}
+          className="fixed inset-0 bg-black/20 z-20 md:hidden"
+        />
+      )}
+
+      <aside className={`fixed md:relative inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-200 ${menuAberto ? 'translate-x-0' : '-translate-x-full md:-ml-64'}`}>
+        <div className="h-12 border-b border-gray-200 px-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 bg-green-700 text-white flex items-center justify-center">
+              <Zap size={16} fill="currentColor" />
             </div>
-            <div>
-              <h1 className="text-lg font-extrabold tracking-tight leading-none">OLSS</h1>
-              <p className="text-[10px] text-green-200 font-semibold tracking-wider mt-1">MONITORAMENTO</p>
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold leading-none">OLSS</h1>
+              <p className="text-[10px] text-gray-500 font-semibold tracking-wider mt-0.5">OPERACIONAL</p>
             </div>
           </div>
-
-          <nav className="px-3 space-y-1">
-            <MenuItem id="dashboard" icone={LayoutDashboard} texto="Visão Geral" />
-            <MenuItem id="pendencias" icone={StickyNote} texto="Lembretes" />
-            
-            <div className="pt-5 pb-1">
-              <p className="px-4 text-[10px] font-bold text-green-300 uppercase tracking-wider">Operação</p>
-            </div>
-            <MenuItem id="clientes" icone={Users} texto="Base de Clientes" />
-            <MenuItem id="mapa" icone={Map} texto="Mapa de Usinas" />
-            <MenuItem id="monitoramento" icone={Activity} texto="Monitoramento" />
-            
-            <div className="pt-5 pb-1">
-              <p className="px-4 text-[10px] font-bold text-green-300 uppercase tracking-wider">Faturamento</p>
-            </div>
-            <MenuItem id="relatorios" icone={FileText} texto="Relatórios" />
-            <MenuItem id="historico" icone={History} texto="Histórico Mensal" />
-          </nav>
+          <button
+            type="button"
+            onClick={() => setMenuAberto(false)}
+            className="p-1.5 text-gray-500 hover:bg-gray-100 cursor-pointer"
+            title="Fechar menu"
+          >
+            <X size={17} />
+          </button>
         </div>
 
-        <div className="p-3 border-t border-green-600/60">
-          <nav className="space-y-1">
-            <MenuItem id="configuracoes" icone={Settings} texto="Configurações" />
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-green-100 hover:bg-red-500 hover:text-white transition-all font-medium text-[13px] mt-1 cursor-pointer">
-              <LogOut size={18} strokeWidth={1.8} />
-              Sair do Sistema
-            </button>
-          </nav>
+        <nav className="flex-1 overflow-y-auto py-2">
+          {MENU_SECTIONS.map(section => (
+            <div key={section.label} className="py-2">
+              <p className="px-3 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{section.label}</p>
+              <div>
+                {section.items.map(item => (
+                  <MenuItem
+                    key={item.id}
+                    id={item.id}
+                    icon={item.icon}
+                    label={item.label}
+                    telaAtiva={telaAtiva}
+                    onSelect={selecionarTela}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        <div className="border-t border-gray-200 py-2">
+          <MenuItem id="configuracoes" icon={Settings} label="Configurações" telaAtiva={telaAtiva} onSelect={selecionarTela} />
+          <button className="w-full flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors font-medium text-[13px] cursor-pointer border-l-2 border-transparent">
+            <LogOut size={17} strokeWidth={1.8} />
+            Sair do Sistema
+          </button>
         </div>
       </aside>
 
-      {/* ÁREA DE CONTEÚDO PRINCIPAL */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[#F8FAFC]">
-        
-        {/* Roteamento das Telas */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+        <header className="h-12 bg-white border-b border-gray-200 px-3 md:px-4 flex items-center gap-3 shrink-0">
           
-          {telaAtiva === 'relatorios' && <Relatorios />}
+          {!menuAberto && (
+            <>
+              <button
+                type="button"
+                onClick={() => setMenuAberto(true)}
+                className="p-2 text-gray-600 hover:bg-gray-100 cursor-pointer"
+                title="Abrir menu"
+              >
+                <Menu size={19} />
+              </button>
+              <div className="h-5 w-px bg-gray-200" />
+            </>
+          )}
+
+          <h2 className="text-sm font-bold text-gray-800 truncate">{PAGE_TITLES[telaAtiva] || telaAtiva}</h2>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-3 md:p-4">
+          {telaAtiva === 'relatorios' && (
+            <Relatorios
+              clienteInicialId={relatorioClienteInicialId}
+              onClienteInicialConsumido={() => setRelatorioClienteInicialId(null)}
+            />
+          )}
           {telaAtiva === 'clientes' && <Clientes />}
           {telaAtiva === 'pendencias' && <Pendencias />}
-          {telaAtiva === 'monitoramento' && <Monitoramento />}
-          {telaAtiva === 'mapa' && <MapaUsinas/>}
           
-          {/* Tela elegante para módulos em construção */}
-          {telaAtiva !== 'relatorios' && telaAtiva !== 'clientes' && telaAtiva !== 'pendencias' && telaAtiva !== 'monitoramento' && telaAtiva !== 'mapa' &&  (
-            <div className="flex flex-col items-center justify-center h-full">
-              <div className="bg-white p-8 rounded-3xl border border-gray-200/60 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col items-center max-w-sm text-center">
-                <div className="p-4 bg-gray-50 rounded-2xl text-gray-400 mb-4 border border-gray-100">
-                  <Activity size={32} strokeWidth={1.5} />
-                </div>
-                <h2 className="text-base font-semibold text-gray-800 capitalize mb-1">
-                  {telaAtiva.replace('_', ' ')}
-                </h2>
-                <p className="text-xs text-gray-400">
-                  Este módulo está sendo estruturado para entrar em produção em breve.
-                </p>
+          {telaAtiva === 'monitoramento' && <Monitoramento onCriarRelatorio={abrirCriacaoRelatorio} />}
+          
+          {telaAtiva === 'mapa' && <MapaUsinas />}
+          {telaAtiva === 'historico' && <HistoricoRelatorios onCriarRelatorio={abrirCriacaoRelatorio} />}
+
+          {!['relatorios', 'clientes', 'pendencias', 'monitoramento', 'mapa', 'historico'].includes(telaAtiva) && (
+            <div className="h-full border border-dashed border-gray-300 bg-white flex items-center justify-center">
+              <div className="text-center">
+                <Activity size={28} strokeWidth={1.5} className="mx-auto mb-3 text-gray-300" />
+                <h2 className="text-sm font-semibold text-gray-800 capitalize">{telaAtiva.replace('_', ' ')}</h2>
+                <p className="text-xs text-gray-500 mt-1">Módulo em estruturação.</p>
               </div>
             </div>
           )}
-
         </div>
       </main>
     </div>
