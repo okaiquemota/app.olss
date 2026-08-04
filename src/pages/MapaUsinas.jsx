@@ -77,7 +77,7 @@ export function MapaUsinas() {
                 obs: cliente.observacoes_internas
               });
             }
-          } catch (e) {
+          } catch {
             console.error("Falha ao localizar endereço: ", cliente.endereco);
           }
           

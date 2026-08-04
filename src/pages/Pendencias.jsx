@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Plus, Trash2, CheckCircle2, Circle, X, Edit2, Settings, Filter, LayoutGrid, List, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -130,7 +130,7 @@ export function Pendencias() {
         atualizados.map(item => supabase.from('lembretes').update({ ordem: item.ordem }).eq('id', item.id))
       );
       if (resultados.some(r => r.error)) throw new Error('Falha');
-    } catch (err) {
+    } catch {
       setOrdemFalhou(true);
     }
   };
