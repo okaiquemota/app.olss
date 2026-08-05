@@ -1,5 +1,5 @@
 import { useState, useEffect, Fragment } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle, X, Edit2, Settings, Filter, LayoutGrid, List, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Circle, X, Edit2, Settings, Filter, LayoutGrid, List, AlertCircle, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function Pendencias() {
@@ -11,6 +11,7 @@ export function Pendencias() {
   const [filtroTipo, setFiltroTipo] = useState('Todos'); 
   const [filtroCategoria, setFiltroCategoria] = useState('Todas');
   const [viewMode, setViewMode] = useState('grid');
+  const [busca, setBusca] = useState('');
 
   // Estados de Drag and Drop
   const [draggedId, setDraggedId] = useState(null);
@@ -34,11 +35,11 @@ export function Pendencias() {
   const [tipoCategoriaModal, setTipoCategoriaModal] = useState('Pendência');
 
   const cores = [
-    { id: 'bg-yellow-50', btnClass: 'bg-yellow-100 border-yellow-200', class: 'bg-yellow-50 text-yellow-900' },
-    { id: 'bg-blue-50', btnClass: 'bg-blue-100 border-blue-200', class: 'bg-blue-50 text-blue-900' },
-    { id: 'bg-green-50', btnClass: 'bg-green-100 border-green-200', class: 'bg-green-50 text-green-900' },
-    { id: 'bg-pink-50', btnClass: 'bg-pink-100 border-pink-200', class: 'bg-pink-50 text-pink-900' },
-    { id: 'bg-purple-50', btnClass: 'bg-purple-100 border-purple-200', class: 'bg-purple-50 text-purple-900' },
+    { id: 'bg-yellow-50', btnClass: 'bg-yellow-100 border-yellow-300', class: 'bg-yellow-50 text-yellow-900' },
+    { id: 'bg-blue-50', btnClass: 'bg-blue-100 border-blue-300', class: 'bg-blue-50 text-blue-900' },
+    { id: 'bg-green-50', btnClass: 'bg-green-100 border-green-300', class: 'bg-green-50 text-green-900' },
+    { id: 'bg-pink-50', btnClass: 'bg-pink-100 border-pink-300', class: 'bg-pink-50 text-pink-900' },
+    { id: 'bg-purple-50', btnClass: 'bg-purple-100 border-purple-300', class: 'bg-purple-50 text-purple-900' },
     { id: 'bg-white', btnClass: 'bg-gray-100 border-gray-300', class: 'bg-white text-gray-800' },
   ];
 
@@ -65,9 +66,10 @@ export function Pendencias() {
   };
 
   const lembretesFiltrados = lembretes.filter(l => {
+    const matchBusca = l.tarefa.toLowerCase().includes(busca.toLowerCase());
     const matchTipo = filtroTipo === 'Todos' || l.tipo === filtroTipo;
     const matchCat = filtroCategoria === 'Todas' || l.categoria === filtroCategoria;
-    return matchTipo && matchCat;
+    return matchBusca && matchTipo && matchCat;
   });
 
   // ==========================================
@@ -76,23 +78,16 @@ export function Pendencias() {
   const handleDragStart = (e, id) => {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', id);
-    
-    setTimeout(() => {
-      setDraggedId(id);
-    }, 0);
+    setTimeout(() => setDraggedId(id), 0);
   };
 
   const handleDragOver = (e, targetId) => {
     e.preventDefault(); 
-    if (draggedId && draggedId !== targetId) {
-      setDragOverId(targetId); 
-    }
+    if (draggedId && draggedId !== targetId) setDragOverId(targetId); 
   };
 
   const handleDragLeave = (e, targetId) => {
-    if (dragOverId === targetId) {
-      setDragOverId(null);
-    }
+    if (dragOverId === targetId) setDragOverId(null);
   };
 
   const handleDragEnd = () => {
@@ -102,11 +97,8 @@ export function Pendencias() {
 
   const handleDrop = async (e, targetId) => {
     e.preventDefault();
-    
     if (!draggedId || draggedId === targetId) {
-      setDraggedId(null);
-      setDragOverId(null);
-      return;
+      setDraggedId(null); setDragOverId(null); return;
     }
 
     const novaLista = [...lembretes];
@@ -122,8 +114,7 @@ export function Pendencias() {
     const atualizados = novaLista.map((item, index) => ({ ...item, ordem: index }));
     setLembretes(atualizados);
     
-    setDraggedId(null);
-    setDragOverId(null);
+    setDraggedId(null); setDragOverId(null);
 
     try {
       const resultados = await Promise.all(
@@ -209,29 +200,28 @@ export function Pendencias() {
   };
 
   const categoriasDoModal = categorias.filter(c => c.tipo === tipoCategoriaModal);
-  const categoriasDoFiltro = categorias.filter(c => c.tipo === filtroTipo);
+  const categoriasDoFiltro = categorias.filter(c => c.tipo === (filtroTipo === 'Todos' ? 'Pendência' : filtroTipo));
 
   // ==========================================
-  // COMPONENTE DO CARD 
+  // COMPONENTE DO CARD FLAT
   // ==========================================
   const TaskCard = ({ item }) => {
     const corCard = item.cor || 'bg-white';
-    
     const isDragged = item.id === draggedId;
     const isDragOver = item.id === dragOverId;
 
     const borderStyle = item.prioridade && !item.concluido
       ? 'border border-red-500'
-      : 'border border-gray-200/60';
+      : 'border border-gray-300'; 
 
     return (
       <div className="relative h-full">
         {isDragOver && (
           <div 
-            className={`absolute z-10 bg-gray-800 rounded-full transition-all duration-200 
+            className={`absolute z-10 bg-green-500 transition-all duration-200 
               ${viewMode === 'grid' 
-                ? 'w-[2px] top-0 bottom-0 -left-[9px]' 
-                : 'h-[2px] left-0 right-0 -top-[5px]'
+                ? 'w-[3px] top-0 bottom-0 -left-[8px]' 
+                : 'h-[3px] left-0 right-0 -top-[4px]'
               }`
             } 
           />
@@ -244,43 +234,42 @@ export function Pendencias() {
           onDragLeave={(e) => handleDragLeave(e, item.id)}
           onDrop={(e) => handleDrop(e, item.id)}
           onDragEnd={handleDragEnd}
-          className={`p-3.5 rounded-2xl flex ${viewMode === 'grid' ? 'flex-col min-h-[120px] h-full justify-between' : 'flex-row items-center gap-4'} transition-all duration-200 group cursor-grab active:cursor-grabbing shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]
-            ${item.concluido ? 'bg-gray-50 border-gray-200 opacity-60 cursor-default shadow-none' : `${corCard} ${borderStyle}`}
-            ${isDragged ? 'opacity-40 scale-[0.98]' : 'opacity-100 scale-100'}
+          className={`p-3.5 flex ${viewMode === 'grid' ? 'flex-col min-h-[120px] h-full justify-between' : 'flex-row items-center gap-4'} transition-all duration-200 group cursor-grab active:cursor-grabbing rounded-none
+            ${item.concluido ? 'bg-gray-50 border border-gray-200 opacity-60 cursor-default' : `${corCard} ${borderStyle} hover:brightness-[0.98]`}
+            ${isDragged ? 'opacity-40 scale-[0.99]' : 'opacity-100 scale-100'}
           `}
         >
           <div className={`flex ${viewMode === 'grid' ? 'items-start' : 'items-center flex-1'} gap-3 w-full relative overflow-hidden`}>
             
             <button
               onClick={() => toggleConcluido(item.id, item.concluido)}
-              className={`shrink-0 transition-transform hover:scale-105 ${item.prioridade && !item.concluido ? 'text-red-500' : 'text-gray-400 hover:text-gray-600'} ${viewMode === 'grid' ? 'mt-0.5' : ''}`}
+              className={`shrink-0 transition-transform hover:scale-105 cursor-pointer ${item.prioridade && !item.concluido ? 'text-red-500' : 'text-gray-400 hover:text-green-600'} ${viewMode === 'grid' ? 'mt-0.5' : ''}`}
             >
-              {item.concluido ? <CheckCircle2 size={18} strokeWidth={2} /> : <Circle size={18} strokeWidth={1.5} />}
+              {item.concluido ? <CheckCircle2 size={18} strokeWidth={2} className="text-green-600" /> : <Circle size={18} strokeWidth={1.5} />}
             </button>
 
             <div className="flex-1 min-w-0 pointer-events-none">
               {viewMode === 'grid' && (
                 <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500/80 bg-black/5 px-1.5 py-0.5 rounded-md">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-white/50 border border-gray-200 px-1.5 py-0.5 rounded-none">
                     {item.categoria}
                   </span>
-                  <span className="text-[10px] font-medium text-gray-400">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                     {item.tipo}
                   </span>
                 </div>
               )}
-              {/* O SEGREDO ESTÁ AQUI: line-clamp-4 corta o texto em 4 linhas apenas no modo grid, e o title="" mostra ele completo no mouse */}
               <p 
                 title={item.tarefa} 
-                className={`text-[13px] font-medium leading-snug transition-all break-words whitespace-pre-wrap ${viewMode === 'grid' ? 'line-clamp-4' : ''} ${item.concluido ? 'line-through text-gray-400' : 'text-gray-700'}`}
+                className={`text-[13px] font-medium leading-snug transition-all break-words whitespace-pre-wrap ${viewMode === 'grid' ? 'line-clamp-4' : ''} ${item.concluido ? 'line-through text-gray-400' : 'text-gray-800'}`}
               >
                 {item.tarefa}
               </p>
             </div>
 
             {viewMode === 'list' && (
-              <div className="flex items-center gap-2 pointer-events-none shrink-0 opacity-60">
-                <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+              <div className="flex items-center gap-2 pointer-events-none shrink-0 opacity-80">
+                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                   {item.categoria} • {item.tipo}
                 </span>
               </div>
@@ -288,11 +277,11 @@ export function Pendencias() {
           </div>
 
           <div className={`flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity ${viewMode === 'grid' ? 'justify-end mt-3' : 'shrink-0 ml-2'}`}>
-            <button onClick={() => abrirModalEdicao(item)} className="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-200/50 rounded-lg transition-colors cursor-pointer">
-              <Edit2 size={14} strokeWidth={1.5} />
+            <button onClick={() => abrirModalEdicao(item)} className="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-white/50 border border-transparent hover:border-gray-300 rounded-none transition-all cursor-pointer">
+              <Edit2 size={14} strokeWidth={2} />
             </button>
-            <button onClick={() => deletarLembrete(item.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer">
-              <Trash2 size={14} strokeWidth={1.5} />
+            <button onClick={() => deletarLembrete(item.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-white/50 border border-transparent hover:border-red-200 rounded-none transition-all cursor-pointer">
+              <Trash2 size={14} strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -301,106 +290,136 @@ export function Pendencias() {
   };
 
   return (
-    <div className="w-full px-6 md:px-8 h-[calc(100vh-80px)] flex flex-col relative animate-in fade-in duration-300 py-4 text-sm antialiased">
+    <div className="w-full h-full flex flex-col relative">
+      
+      {/* Container principal replicando o estilo "card flat" */}
+      <div className="flex flex-col h-full bg-white border border-gray-300 animate-in fade-in duration-300 antialiased text-sm">
 
-      {/* CABEÇALHO E FILTROS */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-5 shrink-0 bg-white/70 backdrop-blur-md p-3 rounded-2xl border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          <div className="flex items-center gap-1 bg-gray-100/80 p-1 rounded-xl">
-            <button onClick={() => mudarFiltroTipo('Todos')} className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all cursor-pointer ${filtroTipo === 'Todos' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}>Todos</button>
-            <button onClick={() => mudarFiltroTipo('Pendência')} className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all cursor-pointer ${filtroTipo === 'Pendência' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}>Pendências</button>
-            <button onClick={() => mudarFiltroTipo('Lembrete')} className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all cursor-pointer ${filtroTipo === 'Lembrete' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}>Lembretes</button>
+        {/* CABEÇALHO / CONTROLES IDÊNTICOS AO MONITORAMENTO */}
+        <div className="flex flex-col lg:flex-row items-center gap-2 p-3 md:p-4 border-b border-gray-300 shrink-0 w-full bg-white">
+          
+          {/* Busca (Esquerda) */}
+          <div className="relative flex-1 w-full lg:w-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input 
+              type="text" 
+              placeholder="Buscar em anotações..." 
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-none text-[13px] focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-all"
+            />
           </div>
 
-          {filtroTipo !== 'Todos' && (
-            <div className="flex items-center gap-2 animate-in slide-in-from-left-2 fade-in duration-300 bg-gray-50 border border-gray-200/60 px-3 py-1.5 rounded-xl">
-              <Filter size={14} className="text-gray-400" />
-              <select
-                value={filtroCategoria}
-                onChange={(e) => setFiltroCategoria(e.target.value)}
-                className="bg-transparent text-[13px] font-semibold text-gray-600 outline-none cursor-pointer hover:text-gray-900 transition-colors"
+          {/* Filtros e Botões (Direita) */}
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto shrink-0 justify-end">
+            
+            {/* View Mode */}
+            <div className="flex border border-gray-300 bg-white">
+               <button onClick={() => setViewMode('grid')} className={`px-2.5 py-1.5 border-r border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-500'}`}><LayoutGrid size={15}/></button>
+               <button onClick={() => setViewMode('list')} className={`px-2.5 py-1.5 hover:bg-gray-50 transition-colors cursor-pointer ${viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-500'}`}><List size={15}/></button>
+            </div>
+            
+            {/* Filtro Tipo */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Filter size={14} className="text-gray-500" />
+              </div>
+              <select 
+                value={filtroTipo} 
+                onChange={(e) => mudarFiltroTipo(e.target.value)}
+                className="bg-white border border-gray-300 pl-8 pr-8 py-2 text-[12px] text-gray-700 outline-none focus:ring-1 focus:ring-green-500 font-medium rounded-none cursor-pointer appearance-none"
               >
-                <option value="Todas">Todas as Categorias</option>
+                <option value="Todos">Todos os tipos</option>
+                <option value="Pendência">Pendências</option>
+                <option value="Lembrete">Lembretes</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-gray-500">
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+              </div>
+            </div>
+
+            {/* Filtro Categoria */}
+            <div className="relative">
+              <select 
+                value={filtroCategoria} 
+                onChange={(e) => setFiltroCategoria(e.target.value)}
+                className="bg-white border border-gray-300 pl-3 pr-8 py-2 text-[12px] text-gray-700 outline-none focus:ring-1 focus:ring-green-500 font-medium rounded-none cursor-pointer appearance-none min-w-[140px]"
+              >
+                <option value="Todas">Todas as categorias</option>
                 {categoriasDoFiltro.map(c => (
                   <option key={c.id} value={c.nome}>{c.nome}</option>
                 ))}
               </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-gray-500">
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+              </div>
             </div>
-          )}
-        </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-          <div className="flex items-center bg-gray-100/80 p-1 rounded-xl mr-2">
-            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}>
-              <LayoutGrid size={16} strokeWidth={1.5} />
+            <button onClick={abrirModalCategorias} className="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-none text-[12px] font-medium hover:bg-gray-100 transition-all cursor-pointer">
+              <Settings size={14} /> Categorias
             </button>
-            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}>
-              <List size={16} strokeWidth={1.5} />
+            
+            <button onClick={abrirModalNovo} className="flex items-center gap-1.5 bg-green-700 text-white px-4 py-2 rounded-none text-[13px] font-medium hover:bg-green-800 transition-all cursor-pointer">
+              <Plus size={16} strokeWidth={2} /> Adicionar
             </button>
           </div>
-
-          <button onClick={abrirModalCategorias} className="flex items-center justify-center bg-gray-100 text-gray-600 p-2 rounded-xl hover:bg-gray-200 transition-all cursor-pointer" title="Gerenciar Categorias">
-            <Settings size={16} strokeWidth={1.5} />
-          </button>
-          <button onClick={abrirModalNovo} className="flex items-center justify-center gap-1.5 bg-gray-900 text-white px-4 py-2 rounded-xl text-[13px] font-medium hover:bg-black transition-all cursor-pointer shadow-sm">
-            <Plus size={16} strokeWidth={2} /> Nova
-          </button>
         </div>
+
+        {/* ÁREA DE RENDERIZAÇÃO DOS CARDS */}
+        {loading ? (
+          <div className="flex justify-center items-center flex-1 text-gray-400 text-[13px]">Carregando anotações...</div>
+        ) : (
+          <div className="flex-1 overflow-y-auto bg-gray-50 p-4">
+            {lembretesFiltrados.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 border border-dashed border-gray-300 bg-white rounded-none">
+                <Filter size={32} strokeWidth={1} className="mb-2 text-gray-300" />
+                <p className="text-[13px]">Nenhuma anotação encontrada.</p>
+              </div>
+            ) : (
+              <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" : "flex flex-col gap-2"}>
+                {lembretesFiltrados.map((item) => (
+                  <Fragment key={item.id}>
+                    <TaskCard item={item} />
+                  </Fragment>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
-      {/* ÁREA DE RENDERIZAÇÃO DOS CARDS */}
-      {loading ? (
-        <div className="flex justify-center items-center flex-1 text-gray-400 text-[13px]">Carregando anotações...</div>
-      ) : (
-        <div className="flex-1 overflow-y-auto pb-10 px-1 pt-1">
-          {lembretesFiltrados.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 border border-dashed border-gray-200 rounded-3xl bg-gray-50/50">
-              <Filter size={32} strokeWidth={1} className="mb-2 text-gray-300" />
-              <p className="text-[13px]">Nenhuma anotação encontrada.</p>
-            </div>
-          ) : (
-            <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" : "flex flex-col gap-2"}>
-              {lembretesFiltrados.map((item) => (
-                <Fragment key={item.id}>
-                  <TaskCard item={item} />
-                </Fragment>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* AVISO DE FALHA AO SALVAR A ORDEM */}
       {ordemFalhou && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-red-600 text-white px-4 py-2.5 rounded-xl shadow-lg text-[13px] font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-red-600 text-white px-4 py-2.5 rounded-none shadow-sm text-[13px] font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
           <AlertCircle size={16} />
           A nova ordem pode não ter sido salva. Recarregue a página.
         </div>
       )}
 
-      {/* MODAL DE NOVA/EDITAR TAREFA */}
+      {/* MODAL PADRONIZADO: NOVA/EDITAR TAREFA */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-          <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-full max-w-sm overflow-hidden transform transition-all animate-in zoom-in-95 duration-200 border border-gray-100">
-            <div className="flex justify-between items-center p-4 border-b border-gray-100">
-              <h3 className="font-semibold text-base text-gray-800">{editandoId ? 'Editar Anotação' : 'Nova Anotação'}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-1.5 rounded-full transition-colors cursor-pointer">
-                <X size={16} strokeWidth={2} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-50 flex items-center justify-center p-4 transition-opacity" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
+          <div className="bg-white shadow-2xl border border-gray-400 w-full max-w-md overflow-hidden transform transition-all animate-in zoom-in-95 duration-200 rounded-none">
+            
+            <div className="flex justify-between items-center p-4 border-b border-gray-300 bg-gray-50">
+              <h3 className="font-bold text-[13px] uppercase tracking-wider text-gray-800">{editandoId ? 'Editar Anotação' : 'Nova Anotação'}</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-red-600 hover:bg-red-50 p-1.5 transition-colors cursor-pointer border border-transparent hover:border-red-200 rounded-none">
+                <X size={16} strokeWidth={2.5} />
               </button>
             </div>
             
-            <form onSubmit={handleSalvarTarefa} className="p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleSalvarTarefa} className="p-5 space-y-5">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-500 mb-1 uppercase tracking-wider">Tipo</label>
-                  <select value={tipoAtivo} onChange={(e) => changeTipoTarefa(e.target.value)} className="w-full bg-gray-50 border border-gray-200/60 rounded-xl p-2.5 text-[13px] focus:ring-1 focus:ring-gray-300 outline-none cursor-pointer font-medium text-gray-700">
+                  <label className="block text-[11px] font-bold text-gray-600 mb-1.5 uppercase tracking-wider">Tipo</label>
+                  <select value={tipoAtivo} onChange={(e) => changeTipoTarefa(e.target.value)} className="w-full bg-white border border-gray-300 px-3 py-2 text-[12px] focus:ring-1 focus:ring-green-500 outline-none cursor-pointer font-medium text-gray-800 rounded-none">
                     <option value="Pendência">Pendência</option>
                     <option value="Lembrete">Lembrete</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-500 mb-1 uppercase tracking-wider">Categoria</label>
-                  <select value={categoriaSelecionada} onChange={(e) => setCategoriaSelecionada(e.target.value)} className="w-full bg-gray-50 border border-gray-200/60 rounded-xl p-2.5 text-[13px] focus:ring-1 focus:ring-gray-300 outline-none cursor-pointer text-gray-700">
+                  <label className="block text-[11px] font-bold text-gray-600 mb-1.5 uppercase tracking-wider">Categoria</label>
+                  <select value={categoriaSelecionada} onChange={(e) => setCategoriaSelecionada(e.target.value)} className="w-full bg-white border border-gray-300 px-3 py-2 text-[12px] focus:ring-1 focus:ring-green-500 outline-none cursor-pointer font-medium text-gray-800 rounded-none">
                     {categorias.filter(c => c.tipo === tipoAtivo).map(cat => (<option key={cat.id} value={cat.nome}>{cat.nome}</option>))}
                     {categorias.filter(c => c.tipo === tipoAtivo).length === 0 && <option value="">Sem categoria</option>}
                   </select>
@@ -408,60 +427,63 @@ export function Pendencias() {
               </div>
 
               <div>
-                <textarea autoFocus placeholder="O que precisa ser feito?" value={tarefa} onChange={(e) => setTarefa(e.target.value)} className="w-full bg-gray-50 border border-gray-200/60 rounded-xl p-3 text-[13px] focus:bg-white focus:ring-1 focus:ring-gray-300 outline-none resize-none h-20 transition-all" />
+                <textarea autoFocus placeholder="O que precisa ser feito?" value={tarefa} onChange={(e) => setTarefa(e.target.value)} className="w-full bg-white border border-gray-300 p-3 text-[13px] focus:ring-1 focus:ring-green-500 outline-none resize-none h-24 transition-all rounded-none placeholder:text-gray-400" />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-gray-500 mb-2 uppercase tracking-wider">Cor de fundo</label>
+                <label className="block text-[11px] font-bold text-gray-600 mb-2 uppercase tracking-wider">Cor de fundo</label>
                 <div className="flex gap-2">
                   {cores.map(cor => (
-                    <button key={cor.id} type="button" onClick={() => setCorSelecionada(cor.id)} className={`w-7 h-7 rounded-full border transition-all ${cor.btnClass} ${corSelecionada === cor.id ? 'ring-2 ring-offset-2 ring-gray-400 scale-105' : 'opacity-60 hover:opacity-100'}`} />
+                    <button key={cor.id} type="button" onClick={() => setCorSelecionada(cor.id)} className={`w-8 h-8 rounded-none border transition-all ${cor.btnClass} ${corSelecionada === cor.id ? 'ring-2 ring-offset-2 ring-gray-400 scale-105' : 'opacity-60 hover:opacity-100'}`} />
                   ))}
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-between mt-2">
-                <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-red-50/50 transition-colors -ml-1.5">
-                  <input type="checkbox" checked={prioridade} onChange={(e) => setPrioridade(e.target.checked)} className="w-3.5 h-3.5 text-red-500 rounded border-gray-300 focus:ring-red-500 cursor-pointer" />
-                  <span className="text-[11px] font-semibold text-red-500 uppercase tracking-wider mt-0.5">Urgente</span>
+              <div className="pt-3 border-t border-gray-200 flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 transition-colors -ml-1.5 border border-transparent hover:border-gray-200 rounded-none">
+                  <input type="checkbox" checked={prioridade} onChange={(e) => setPrioridade(e.target.checked)} className="w-4 h-4 text-red-600 rounded-none border-gray-300 focus:ring-red-500 cursor-pointer" />
+                  <span className="text-[11px] font-bold text-red-600 uppercase tracking-wider">Urgente</span>
                 </label>
-                <button type="submit" className="flex items-center bg-gray-900 text-white px-4 py-2 rounded-xl text-[13px] font-medium hover:bg-black transition-all cursor-pointer">Salvar</button>
+                <button type="submit" className="flex items-center gap-1.5 bg-green-700 text-white px-5 py-2 rounded-none text-[13px] font-medium hover:bg-green-800 transition-all cursor-pointer border border-green-800">
+                  Salvar
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* MODAL DE GERENCIAR CATEGORIAS */}
+      {/* MODAL PADRONIZADO: GERENCIAR CATEGORIAS */}
       {isCategoriaModalOpen && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setIsCategoriaModalOpen(false); }}>
-          <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100">
-            <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50/50">
-              <h3 className="font-semibold text-base text-gray-800">Categorias</h3>
-              <button onClick={() => setIsCategoriaModalOpen(false)} className="text-gray-400 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 p-1.5 rounded-full transition-colors cursor-pointer">
-                <X size={16} strokeWidth={2} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-50 flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setIsCategoriaModalOpen(false); }}>
+          <div className="bg-white shadow-2xl border border-gray-400 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 rounded-none">
+            
+            <div className="flex justify-between items-center p-4 border-b border-gray-300 bg-gray-50">
+              <h3 className="font-bold text-[13px] uppercase tracking-wider text-gray-800">Gerenciar Categorias</h3>
+              <button onClick={() => setIsCategoriaModalOpen(false)} className="text-gray-500 hover:text-red-600 hover:bg-red-50 p-1.5 transition-colors cursor-pointer border border-transparent hover:border-red-200 rounded-none">
+                <X size={16} strokeWidth={2.5} />
               </button>
             </div>
             
-            <div className="p-4 space-y-4">
-              <div className="flex bg-gray-100 p-1 rounded-xl">
-                <button onClick={() => setTipoCategoriaModal('Pendência')} className={`flex-1 py-1.5 text-[12px] font-semibold rounded-lg ${tipoCategoriaModal === 'Pendência' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}`}>Pendências</button>
-                <button onClick={() => setTipoCategoriaModal('Lembrete')} className={`flex-1 py-1.5 text-[12px] font-semibold rounded-lg ${tipoCategoriaModal === 'Lembrete' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}`}>Lembretes</button>
+            <div className="p-5 space-y-5">
+              <div className="flex border border-gray-300 bg-white">
+                <button onClick={() => setTipoCategoriaModal('Pendência')} className={`flex-1 py-2 text-[12px] font-bold border-r border-gray-300 ${tipoCategoriaModal === 'Pendência' ? 'bg-gray-100 text-gray-800' : 'text-gray-500 hover:bg-gray-50'}`}>Pendências</button>
+                <button onClick={() => setTipoCategoriaModal('Lembrete')} className={`flex-1 py-2 text-[12px] font-bold ${tipoCategoriaModal === 'Lembrete' ? 'bg-gray-100 text-gray-800' : 'text-gray-500 hover:bg-gray-50'}`}>Lembretes</button>
               </div>
 
               <form onSubmit={handleSalvarCategoria} className="flex gap-2">
-                <input type="text" placeholder="Nome da categoria..." value={novaCategoria} onChange={(e) => setNovaCategoria(e.target.value)} className="flex-1 bg-gray-50 border border-gray-200/60 rounded-xl p-2.5 text-[13px] focus:ring-1 focus:ring-gray-300 outline-none" />
-                <button type="submit" className="bg-gray-900 text-white px-3.5 py-2 rounded-xl text-[13px] font-medium hover:bg-black transition-all cursor-pointer">Add</button>
+                <input type="text" placeholder="Nome da categoria..." value={novaCategoria} onChange={(e) => setNovaCategoria(e.target.value)} className="flex-1 bg-white border border-gray-300 rounded-none px-3 py-2 text-[12px] focus:ring-1 focus:ring-green-500 outline-none" />
+                <button type="submit" className="bg-gray-800 text-white px-4 py-2 rounded-none text-[12px] font-medium hover:bg-gray-900 transition-all cursor-pointer">Add</button>
               </form>
 
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+              <div className="space-y-1.5 max-h-48 overflow-y-auto border border-gray-200 p-2 bg-gray-50">
                 {categoriasDoModal.map(cat => (
-                  <div key={cat.id} className="flex justify-between items-center bg-white border border-gray-100 p-2.5 rounded-xl shadow-sm">
-                    <span className="text-[13px] font-medium text-gray-700">{cat.nome}</span>
-                    <button onClick={() => deletarCategoria(cat.id)} className="text-gray-300 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50/50"><Trash2 size={14} /></button>
+                  <div key={cat.id} className="flex justify-between items-center bg-white border border-gray-300 p-2 shadow-sm rounded-none">
+                    <span className="text-[12px] font-medium text-gray-800">{cat.nome}</span>
+                    <button onClick={() => deletarCategoria(cat.id)} className="text-gray-400 hover:text-red-600 transition-colors p-1 hover:bg-red-50 border border-transparent hover:border-red-200 rounded-none cursor-pointer"><Trash2 size={14} /></button>
                   </div>
                 ))}
-                {categoriasDoModal.length === 0 && <p className="text-center text-[12px] text-gray-400 py-4">Nenhuma categoria registrada.</p>}
+                {categoriasDoModal.length === 0 && <p className="text-center text-[12px] text-gray-500 py-4 font-medium">Nenhuma categoria registrada.</p>}
               </div>
             </div>
           </div>
