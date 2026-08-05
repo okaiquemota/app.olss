@@ -34,6 +34,9 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
 
   const geradora = unidades.find(u => u.tipo === 'Geradora');
 
+  // Cor Verde Escuro Oficial da OLSS
+  const corOlss = '#064E3B'; 
+
   // =========================================================
   // GERAÇÃO DO GRÁFICO (QuickChart API)
   // =========================================================
@@ -43,27 +46,50 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
     const labels = historicoGrafico.map(h => h.mes);
     const data = historicoGrafico.map(h => h.geracao);
 
+    const maxVal = Math.max(...data);
+
     const chartConfig = {
       type: 'bar',
       data: {
         labels: labels,
         datasets: [{
-          label: 'Geração (kWh)',
           data: data,
-          backgroundColor: '#1E3A8A', // Azul escuro da sua marca
-          borderRadius: 4
+          backgroundColor: corOlss, // Verde OLSS
+          barThickness: 40
         }]
       },
       options: {
+        legend: { display: false },
         plugins: {
-          datalabels: { display: true, anchor: 'end', align: 'top', color: '#1E3A8A', font: { weight: 'bold' } },
-          legend: { display: false }
+          datalabels: { 
+            display: true, 
+            anchor: 'end', 
+            align: 'top', 
+            color: corOlss, 
+            font: { weight: 'bold', size: 13 },
+            formatter: (val) => val > 0 ? val : '' 
+          }
         },
         scales: {
-          y: { beginAtZero: true, grid: { color: '#E2E8F0' } },
-          x: { grid: { display: false } }
+          yAxes: [{
+            display: true, // Reativa o eixo Y para dar noção de escala
+            gridLines: { 
+              color: '#E2E8F0', // Grade horizontal sutil e limpa
+              borderDash: [4, 4] 
+            },
+            ticks: { 
+              beginAtZero: true,
+              suggestedMax: maxVal + (maxVal * 0.25), // Respiro elegante no topo
+              fontColor: '#64748B',
+              fontSize: 10
+            }
+          }],
+          xAxes: [{
+            gridLines: { display: false }, // Sem linhas verticais para não poluir
+            ticks: { fontStyle: 'bold', fontSize: 12, fontColor: '#1E293B' } 
+          }]
         },
-        layout: { padding: { top: 20 } } // Espaço para os números não cortarem
+        layout: { padding: { top: 25, left: 10, right: 10 } }
       }
     };
 
@@ -87,7 +113,7 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
     content: [
       // CABEÇALHO
       { text: 'Relatório Mensal', style: 'header', alignment: 'center' },
-      { text: 'MOVCODE - LIMPEZA E MONITORAMENTO FOTOVOLTAICO', style: 'subHeader', alignment: 'center', margin: [0, 0, 0, 15] },
+      { text: 'OLSS - LIMPEZA E MONITORAMENTO FOTOVOLTAICO', style: 'subHeader', alignment: 'center', margin: [0, 0, 0, 15] },
 
       // DADOS DO CLIENTE
       {
@@ -131,12 +157,12 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
     },
 
     styles: {
-      header: { fontSize: 22, bold: true, color: '#1E3A8A', margin: [0, 0, 0, 2] },
+      header: { fontSize: 22, bold: true, color: corOlss, margin: [0, 0, 0, 2] },
       subHeader: { fontSize: 10, bold: true, color: '#64748B', tracking: 1 },
-      sectionTitle: { fontSize: 12, bold: true, color: '#1E3A8A', margin: [0, 10, 0, 5], decoration: 'underline' },
+      sectionTitle: { fontSize: 12, bold: true, color: corOlss, margin: [0, 10, 0, 5], decoration: 'underline' },
       paragraph: { fontSize: 10, color: '#334155', lineHeight: 1.4, alignment: 'justify' },
       list: { fontSize: 10, color: '#334155', lineHeight: 1.5, margin: [10, 0, 0, 0] },
-      tableHeader: { bold: true, fontSize: 8, color: '#FFFFFF', fillColor: '#1E3A8A', alignment: 'center', margin: [0, 5, 0, 5] },
+      tableHeader: { bold: true, fontSize: 8, color: '#FFFFFF', fillColor: corOlss, alignment: 'center', margin: [0, 5, 0, 5] },
       tableCell: { fontSize: 8, color: '#334155', alignment: 'center', margin: [0, 5, 0, 5] },
       economiaTotal: { fontSize: 13, bold: true, color: '#166534' },
       footerSignature: { fontSize: 8, color: '#475569', bold: true, lineHeight: 1.3 },
