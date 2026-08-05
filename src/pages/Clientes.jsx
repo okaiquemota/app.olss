@@ -3,7 +3,7 @@ import {
   Save, Loader2, Plus, Trash2, X, 
   Search, Zap, User, Key, Calendar, 
   Phone, FileText, Activity, Mail, Copy,
-  CheckCircle, XCircle, AlertCircle
+  CheckCircle2, AlertCircle, FileX, Filter
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -21,7 +21,7 @@ export function Clientes() {
   const [clienteEditando, setClienteEditando] = useState(null);
   
   const [formData, setFormData] = useState({
-    nome_razao_social: '', documento: '', contato: '', email: '', status: 'Ativo',
+    nome_razao_social: '', documento: '', contato: '', email: '', status: 'Em prospecção',
     endereco: '', login_cpfl: '', senha_cpfl: '', plataforma_inversor: '', 
     login_app: '', senha_app: '', dia_vencimento: '', observacoes_internas: '', 
     ultimo_relatorio: ''
@@ -51,7 +51,7 @@ export function Clientes() {
   const prepararNovoCliente = () => {
     setClienteEditando(null);
     setFormData({
-      nome_razao_social: '', documento: '', contato: '', email: '', status: 'Ativo',
+      nome_razao_social: '', documento: '', contato: '', email: '', status: 'Em prospecção',
       endereco: '', login_cpfl: '', senha_cpfl: '', plataforma_inversor: '', 
       login_app: '', senha_app: '', dia_vencimento: '', observacoes_internas: '', 
       ultimo_relatorio: ''
@@ -67,7 +67,7 @@ export function Clientes() {
       documento: cliente.documento || '',
       contato: cliente.contato || '',
       email: cliente.email || '',
-      status: cliente.status || 'Ativo',
+      status: cliente.status || 'Em prospecção',
       endereco: cliente.endereco || '',
       login_cpfl: cliente.login_cpfl || '',
       senha_cpfl: cliente.senha_cpfl || '',
@@ -101,6 +101,34 @@ export function Clientes() {
         ucs: ucs
       };
 
+      // ==========================================
+      // NOVA LÓGICA: Busca coordenadas no momento de salvar
+      // ==========================================
+      if (formData.endereco && formData.endereco.trim() !== '') {
+        try {
+          let query = formData.endereco;
+          if (!query.toLowerCase().includes('brasil')) query += ', Brasil';
+
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
+            headers: { 'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7' }
+          });
+          const geoData = await res.json();
+          
+          if (geoData && geoData.length > 0) {
+            payload.lat = parseFloat(geoData[0].lat);
+            payload.lng = parseFloat(geoData[0].lon);
+          } else {
+            payload.lat = null;
+            payload.lng = null;
+          }
+        } catch (e) {
+          console.error("Erro ao buscar coordenadas na hora de salvar:", e);
+        }
+      } else {
+        payload.lat = null;
+        payload.lng = null;
+      }
+
       if (clienteEditando) {
         const { error } = await supabase.from('clientes').update(payload).eq('id', clienteEditando);
         if (error) throw error;
@@ -118,7 +146,7 @@ export function Clientes() {
     }
   };
 
-  // Lógica de Filtros e Contadores
+  // Lógica Comercial de Filtros e Contadores
   const clientesFiltrados = clientesLista.filter(c => {
     const matchBusca = c.nome_razao_social.toLowerCase().includes(busca.toLowerCase());
     const matchStatus = filtroStatus === 'Todos' || c.status === filtroStatus;
@@ -126,30 +154,30 @@ export function Clientes() {
   });
 
   const total = clientesFiltrados.length;
-  const ativos = clientesFiltrados.filter(c => c.status === 'Ativo').length;
-  const inativos = clientesFiltrados.filter(c => c.status === 'Inativo').length;
-  const outros = total - ativos - inativos;
+  const comContrato = clientesFiltrados.filter(c => c.status === 'Com contrato').length;
+  const semContrato = clientesFiltrados.filter(c => c.status === 'Sem contrato').length;
+  const prospeccao = clientesFiltrados.filter(c => c.status === 'Em prospecção').length;
 
   const renderStatus = (status) => {
-    const stat = status || 'Ativo';
+    const stat = status || 'Em prospecção';
     
-    if (stat === 'Ativo') {
+    if (stat === 'Com contrato') {
       return (
         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 border border-green-400 text-green-700 bg-transparent rounded-sm text-[11px] font-bold">
-          <CheckCircle size={13} /> Ativo
+          <CheckCircle2 size={13} /> Com contrato
         </span>
       );
     }
-    if (stat === 'Inativo') {
+    if (stat === 'Sem contrato') {
       return (
         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 border border-red-400 text-red-700 bg-transparent rounded-sm text-[11px] font-bold">
-          <XCircle size={13} /> Inativo
+          <FileX size={13} /> Sem contrato
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 border border-yellow-400 text-yellow-700 bg-transparent rounded-sm text-[11px] font-bold">
-        <AlertCircle size={13} /> {stat}
+        <AlertCircle size={13} /> Em prospecção
       </span>
     );
   };
@@ -183,63 +211,65 @@ export function Clientes() {
   return (
     <div className="w-full h-full flex flex-col relative">
       
-      {/* ========================================== */}
-      {/* TELA DE LISTA */}
-      {/* ========================================== */}
-      
-      {/* Container principal com borda e sombra para fazer o estilo "card" na tela */}
       <div className="flex flex-col h-full bg-white border border-gray-300 shadow-sm animate-in fade-in duration-300 antialiased text-sm">
         
-        {/* CONTROLES / BUSCA */}
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-3 p-3 md:p-4 border-b border-gray-300 shrink-0 w-full bg-white">
+        {/* CABEÇALHO / CONTROLES IDÊNTICO AO MONITORAMENTO */}
+        <div className="flex flex-col lg:flex-row items-center gap-2 p-3 md:p-4 border-b border-gray-300 shrink-0 w-full bg-white">
           
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto flex-1">
-            <div className="relative w-full sm:max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input 
-                type="text" 
-                placeholder="Buscar cliente, documento ou email..." 
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-none text-[13px] focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-all"
-              />
-            </div>
-            
-            <select 
-              value={filtroStatus} 
-              onChange={(e) => setFiltroStatus(e.target.value)}
-              className="w-full sm:w-auto bg-white border border-gray-300 px-3 py-2 text-[12px] text-gray-700 outline-none focus:ring-1 focus:ring-green-500 font-medium rounded-none cursor-pointer"
-            >
-              <option value="Todos">Todos os status</option>
-              <option value="Ativo">Ativo</option>
-              <option value="Inativo">Inativo</option>
-              <option value="Com contrato">Com contrato</option>
-              <option value="Sem contrato">Sem contrato</option>
-              <option value="Em prospecção">Em prospecção</option>
-            </select>
+          <div className="relative flex-1 w-full lg:w-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input 
+              type="text" 
+              placeholder="Buscar em cliente, documento ou email..." 
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-none text-[13px] font-medium text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 placeholder:text-gray-400 transition-all"
+            />
           </div>
           
-          <button 
-            onClick={prepararNovoCliente}
-            className="w-full lg:w-auto flex items-center justify-center gap-1.5 bg-green-700 text-white px-4 py-2 rounded-none text-[13px] font-medium hover:bg-green-800 transition-all cursor-pointer shrink-0"
-          >
-            <Plus size={16} strokeWidth={2} /> Adicionar
-          </button>
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto shrink-0 justify-end">
+            
+            <div className="relative">
+               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                 <Filter size={14} className="text-gray-500" />
+               </div>
+              <select 
+                value={filtroStatus} 
+                onChange={(e) => setFiltroStatus(e.target.value)}
+                className="bg-white border border-gray-300 pl-8 pr-8 py-2 text-[12px] text-gray-700 outline-none focus:ring-1 focus:ring-green-500 font-medium rounded-none cursor-pointer appearance-none"
+              >
+                <option value="Todos">Todos os status</option>
+                <option value="Com contrato">Com contrato</option>
+                <option value="Sem contrato">Sem contrato</option>
+                <option value="Em prospecção">Em prospecção</option>
+              </select>
+               <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-gray-500">
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+               </div>
+            </div>
+
+            <button 
+              onClick={prepararNovoCliente}
+              className="flex items-center justify-center gap-1.5 bg-green-700 text-white px-3 py-2 rounded-none text-[12px] font-medium hover:bg-green-800 transition-all cursor-pointer"
+            >
+              <Plus size={14} strokeWidth={2} /> Adicionar
+            </button>
+          </div>
         </div>
 
-        {/* BARRA DE RESUMO */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 border-b border-gray-300 bg-white shrink-0">
-          <div className="px-4 py-2.5 border-r border-gray-300 text-[12px] text-gray-800">
-            <span className="font-extrabold">{total}</span> clientes
+        {/* BARRA DE RESUMO COMERCIAL */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-gray-300 bg-white shrink-0">
+          <div className="px-4 py-2 border-r border-gray-300 text-[12px] text-gray-800">
+            <span className="font-extrabold">{total}</span> cadastros
           </div>
-          <div className="px-4 py-2.5 border-r border-gray-300 text-[12px] text-green-700">
-            <span className="font-extrabold">{ativos}</span> ativos
+          <div className="px-4 py-2 border-r border-gray-300 text-[12px] text-green-700">
+            <span className="font-extrabold">{comContrato}</span> com contrato
           </div>
-          <div className="px-4 py-2.5 border-r border-gray-300 text-[12px] text-red-600">
-            <span className="font-extrabold">{inativos}</span> inativos
+          <div className="px-4 py-2 border-r border-gray-300 text-[12px] text-red-600">
+            <span className="font-extrabold">{semContrato}</span> sem contrato
           </div>
-          <div className="hidden sm:block px-4 py-2.5 text-[12px] text-yellow-600">
-            <span className="font-extrabold">{outros}</span> outros
+          <div className="hidden sm:block px-4 py-2 text-[12px] text-yellow-600">
+            <span className="font-extrabold">{prospeccao}</span> em prospecção
           </div>
         </div>
 
@@ -247,16 +277,16 @@ export function Clientes() {
         <div className="flex-1 overflow-y-auto bg-white flex flex-col">
           {loadingLista ? (
             <div className="flex justify-center items-center flex-1 text-gray-400 text-[13px] min-h-[200px]">
-              <Loader2 className="animate-spin mr-2" size={18} /> Carregando clientes...
+              <Loader2 className="animate-spin mr-2" size={18} /> Carregando cadastros...
             </div>
           ) : (
             <div className="overflow-x-auto flex-1">
               <table className="w-full text-left border-collapse whitespace-nowrap">
-                <thead className="bg-gray-100 sticky top-0 z-10 border-b border-gray-300">
+                <thead className="bg-gray-50 sticky top-0 z-10 border-b border-gray-300">
                   <tr className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">
                     <th className="px-4 py-3 border-r border-gray-300">Cliente / Empresa</th>
                     <th className="px-4 py-3 border-r border-gray-300 text-center">UCs</th>
-                    <th className="px-4 py-3 border-r border-gray-300">Status</th>
+                    <th className="px-4 py-3 border-r border-gray-300">Status Comercial</th>
                     <th className="px-4 py-3 border-r border-gray-300">CNPJ/CPF</th>
                     <th className="px-4 py-3 border-r border-gray-300">Contato</th>
                     <th className="px-4 py-3 border-r border-gray-300">E-mail</th>
@@ -270,9 +300,8 @@ export function Clientes() {
                       onClick={() => abrirClienteParaEdicao(cliente)}
                       className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
                     >
-                      {/* Voltamos para px-4 py-2.5 pra dar o respiro certinho */}
                       <td className="px-4 py-2.5 border-r border-gray-200 min-w-[200px]">
-                        {renderCelulaComCopia(cliente.nome_razao_social, "font-semibold text-[12px] text-gray-800")}
+                        {renderCelulaComCopia(cliente.nome_razao_social, "font-medium text-[12px] text-gray-700")}
                       </td>
                       <td className="px-4 py-2.5 border-r border-gray-200 text-center">
                         <span className="inline-flex items-center justify-center px-1.5 py-0.5 bg-gray-100 text-gray-600 font-bold text-[11px] border border-gray-200">
@@ -283,23 +312,23 @@ export function Clientes() {
                         {renderStatus(cliente.status)}
                       </td>
                       <td className="px-4 py-2.5 border-r border-gray-200 min-w-[130px]">
-                        {renderCelulaComCopia(cliente.documento)}
+                        {renderCelulaComCopia(cliente.documento, "text-[12px] text-gray-700 font-medium")}
                       </td>
                       <td className="px-4 py-2.5 border-r border-gray-200 min-w-[130px]">
-                        {renderCelulaComCopia(cliente.contato)}
+                        {renderCelulaComCopia(cliente.contato, "text-[12px] text-gray-700 font-medium")}
                       </td>
                       <td className="px-4 py-2.5 border-r border-gray-200 min-w-[160px]">
-                        {renderCelulaComCopia(cliente.email)}
+                        {renderCelulaComCopia(cliente.email, "text-[12px] text-gray-700 font-medium")}
                       </td>
                       <td className="px-4 py-2.5 min-w-[200px] max-w-[300px]">
-                        {renderCelulaComCopia(cliente.endereco)}
+                        {renderCelulaComCopia(cliente.endereco, "text-[12px] text-gray-700 font-medium")}
                       </td>
                     </tr>
                   ))}
                   {clientesFiltrados.length === 0 && (
                     <tr>
                       <td colSpan="7" className="px-4 py-8 text-center text-[12px] text-gray-400">
-                        Nenhum cliente encontrado na busca.
+                        Nenhum cadastro encontrado na busca.
                       </td>
                     </tr>
                   )}
@@ -310,9 +339,7 @@ export function Clientes() {
         </div>
       </div>
 
-      {/* ========================================== */}
       {/* MODAL DO FORMULÁRIO */}
-      {/* ========================================== */}
       {view === 'form' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[2px] p-4 md:p-6 lg:p-8">
           
@@ -325,7 +352,7 @@ export function Clientes() {
                 </button>
                 <div className="h-5 w-px bg-gray-300" />
                 <h2 className="text-[13px] font-bold text-gray-800 uppercase tracking-wider">
-                  {clienteEditando ? 'Edição de Cliente' : 'Novo Cliente'}
+                  {clienteEditando ? 'Edição de Cadastro' : 'Novo Cadastro'}
                 </h2>
               </div>
               
@@ -369,10 +396,8 @@ export function Clientes() {
                       </div>
 
                       <div className="col-span-1 md:col-span-1 lg:col-span-2">
-                        <label className={labelClass}><Activity size={13}/> Status Contratual</label>
+                        <label className={labelClass}><Activity size={13}/> Status Comercial</label>
                         <select name="status" value={formData.status} onChange={handleChange} className={`${inputClass} font-medium text-gray-800 cursor-pointer`}>
-                          <option value="Ativo">Ativo</option>
-                          <option value="Inativo">Inativo</option>
                           <option value="Com contrato">Com contrato</option>
                           <option value="Sem contrato">Sem contrato</option>
                           <option value="Em prospecção">Em prospecção</option>
@@ -474,7 +499,7 @@ export function Clientes() {
                   <div className="bg-white border border-gray-300">
                     <div className={cardHeaderClass}>
                       <h3 className={cardTitleClass}>
-                        <Key size={14} className="text-gray-500" /> Credenciais
+                        <Key size={14} className="text-gray-500" /> Credenciais Operacionais
                       </h3>
                     </div>
                     <div className="p-4 space-y-4">
