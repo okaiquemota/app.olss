@@ -23,13 +23,58 @@ export function Clientes() {
   const [formData, setFormData] = useState({
     nome_razao_social: '', documento: '', contato: '', email: '', status: 'Em prospecção',
     endereco: '', login_cpfl: '', senha_cpfl: '', plataforma_inversor: '', 
-    login_app: '', senha_app: '', dia_vencimento: '', observacoes_internas: '', 
-    ultimo_relatorio: ''
+    login_app: '', senha_app: '', observacoes_internas: ''
   });
   
   const [ucs, setUcs] = useState([
     { id: Date.now(), tipo: 'Geradora', numero_uc: '' }
   ]);
+
+  // ==========================================
+  // NOVOS ESTADOS: GESTÃO DE CONTRATO
+  // ==========================================
+  const [dataInicioContrato, setDataInicioContrato] = useState('');
+  const [duracaoMeses, setDuracaoMeses] = useState('12'); // Padrão 1 ano
+  const [dataTerminoCalculada, setDataTerminoCalculada] = useState('');
+  const [ultimoRelatorioAuto, setUltimoRelatorioAuto] = useState('Nunca feito');
+
+  // Calcula a data de término automaticamente
+  useEffect(() => {
+    if (!dataInicioContrato) return;
+    
+    const [ano, mes, dia] = dataInicioContrato.split('-');
+    const dataIni = new Date(ano, mes - 1, dia);
+    
+    // Soma os meses da duração
+    dataIni.setMonth(dataIni.getMonth() + parseInt(duracaoMeses));
+    
+    const diaF = String(dataIni.getDate()).padStart(2, '0');
+    const mesF = String(dataIni.getMonth() + 1).padStart(2, '0');
+    const anoF = dataIni.getFullYear();
+    
+    setDataTerminoCalculada(`${diaF}/${mesF}/${anoF}`);
+  }, [dataInicioContrato, duracaoMeses]);
+
+  // Lê o último relatório gerado pelo cliente no banco
+  const carregarUltimoRelatorio = async (clienteId) => {
+    if (!clienteId) {
+      setUltimoRelatorioAuto('Nunca feito');
+      return;
+    }
+    const { data, error } = await supabase
+      .from('relatorios')
+      .select('mes_referencia')
+      .eq('cliente_id', clienteId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (!error && data && data.length > 0) {
+      setUltimoRelatorioAuto(data[0].mes_referencia);
+    } else {
+      setUltimoRelatorioAuto('Nunca feito');
+    }
+  };
+  // ==========================================
 
   const fetchClientes = async () => {
     setLoadingLista(true);
@@ -53,10 +98,16 @@ export function Clientes() {
     setFormData({
       nome_razao_social: '', documento: '', contato: '', email: '', status: 'Em prospecção',
       endereco: '', login_cpfl: '', senha_cpfl: '', plataforma_inversor: '', 
-      login_app: '', senha_app: '', dia_vencimento: '', observacoes_internas: '', 
-      ultimo_relatorio: ''
+      login_app: '', senha_app: '', observacoes_internas: ''
     });
     setUcs([{ id: Date.now(), tipo: 'Geradora', numero_uc: '' }]);
+    
+    // Reseta Contrato
+    setDataInicioContrato('');
+    setDuracaoMeses('12');
+    setDataTerminoCalculada('');
+    setUltimoRelatorioAuto('Nunca feito');
+    
     setView('form');
   };
 
@@ -74,9 +125,7 @@ export function Clientes() {
       plataforma_inversor: cliente.plataforma_inversor || '',
       login_app: cliente.login_app || '',
       senha_app: cliente.senha_app || '',
-      dia_vencimento: cliente.dia_vencimento || '',
-      observacoes_internas: cliente.observacoes_internas || '',
-      ultimo_relatorio: cliente.ultimo_relatorio || ''
+      observacoes_internas: cliente.observacoes_internas || ''
     });
     
     if (cliente.ucs && cliente.ucs.length > 0) {
@@ -84,6 +133,13 @@ export function Clientes() {
     } else {
       setUcs([{ id: Date.now(), tipo: 'Geradora', numero_uc: '' }]);
     }
+
+    // Carrega dados de contrato
+    setDataTerminoCalculada(cliente.dia_vencimento || ''); // Puxa o término salvo no banco
+    setDataInicioContrato(''); // Fica limpo para caso ele queira calcular um novo
+    setDuracaoMeses('12');
+    carregarUltimoRelatorio(cliente.id); // Puxa o último relatório dinâmico
+    
     setView('form');
   };
 
@@ -95,15 +151,14 @@ export function Clientes() {
 
     setLoadingForm(true);
     try {
+      // Salva a data calculada direto na coluna 'dia_vencimento'
       const payload = {
         ...formData,
-        dia_vencimento: formData.dia_vencimento ? parseInt(formData.dia_vencimento) : null,
+        dia_vencimento: dataTerminoCalculada || null,
+        ultimo_relatorio: ultimoRelatorioAuto !== 'Nunca feito' ? ultimoRelatorioAuto : null,
         ucs: ucs
       };
 
-      // ==========================================
-      // NOVA LÓGICA: Busca coordenadas no momento de salvar
-      // ==========================================
       if (formData.endereco && formData.endereco.trim() !== '') {
         try {
           let query = formData.endereco;
@@ -478,20 +533,53 @@ export function Clientes() {
 
                 <div className="space-y-4">
                   
+                  {/* NOVO BLOCO: GESTÃO DE CONTRATO E HISTÓRICO */}
                   <div className="bg-white border border-gray-300">
                     <div className={cardHeaderClass}>
                       <h3 className={cardTitleClass}>
-                        <Calendar size={14} className="text-gray-500" /> Faturamento
+                        <Calendar size={14} className="text-gray-500" /> Gestão de Contrato
                       </h3>
                     </div>
                     <div className="p-4 space-y-4">
                       <div>
-                        <label className={labelClass}>Dia de Vencimento</label>
-                        <input type="number" name="dia_vencimento" value={formData.dia_vencimento} onChange={handleChange} placeholder="Ex: 15" className={inputClass} />
+                        <label className={labelClass}>Data de Início do Contrato</label>
+                        <input 
+                          type="date" 
+                          value={dataInicioContrato} 
+                          onChange={(e) => setDataInicioContrato(e.target.value)} 
+                          className={inputClass} 
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Duração do Contrato</label>
+                        <select 
+                          value={duracaoMeses} 
+                          onChange={(e) => setDuracaoMeses(e.target.value)}
+                          className={`${inputClass} cursor-pointer font-medium`}
+                        >
+                          <option value="6">6 Meses</option>
+                          <option value="12">1 Ano (12 Meses)</option>
+                          <option value="18">18 Meses</option>
+                          <option value="24">2 Anos (24 Meses)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className={labelClass}>Término (Calculado)</label>
+                        <input 
+                          type="text" 
+                          disabled 
+                          value={dataTerminoCalculada || 'Defina a data de início'} 
+                          className="w-full bg-gray-100 border border-gray-300 px-3 py-2 text-[12px] text-gray-700 font-bold rounded-none" 
+                        />
                       </div>
                       <div>
                         <label className={labelClass}>Mês Últ. Relatório</label>
-                        <input type="text" name="ultimo_relatorio" value={formData.ultimo_relatorio} onChange={handleChange} placeholder="Ex: Abr/26" className={inputClass} />
+                        <input 
+                          type="text" 
+                          disabled 
+                          value={ultimoRelatorioAuto} 
+                          className={`w-full bg-gray-100 border border-gray-300 px-3 py-2 text-[12px] font-extrabold rounded-none ${ultimoRelatorioAuto === 'Nunca feito' ? 'text-gray-400' : 'text-green-700'}`} 
+                        />
                       </div>
                     </div>
                   </div>
