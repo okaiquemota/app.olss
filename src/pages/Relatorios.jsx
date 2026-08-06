@@ -200,17 +200,17 @@ export function Relatorios({ clienteInicialId, onClienteInicialConsumido }) {
         });
 
         // Agrupa pegando sempre o mais recente caso haja duplicata
+        // Chave = mes_referencia completo (mês + ano) para não colidir meses iguais de anos diferentes
         const historicoAgrupado = {};
         historicoBruto.forEach(r => {
-          const mesCurto = r.mes_referencia.substring(0, 3);
-          historicoAgrupado[mesCurto] = parseFloat(r.geracao_atual) || 0;
+          historicoAgrupado[r.mes_referencia] = parseFloat(r.geracao_atual) || 0;
         });
 
-        // Pega apenas os últimos 6 meses gerados
+        // Pega apenas os últimos 6 meses gerados (já ordenados cronologicamente)
         const chavesMeses = Object.keys(historicoAgrupado).slice(-6);
-        const historicoGraficoLimpo = chavesMeses.map(mes => ({
-          mes: mes,
-          geracao: historicoAgrupado[mes]
+        const historicoGraficoLimpo = chavesMeses.map(chave => ({
+          mes: chave.substring(0, 3), // label curto (ex: "Jun") só para exibição no gráfico
+          geracao: historicoAgrupado[chave]
         }));
 
         await gerarPdfRelatorio({
@@ -478,7 +478,7 @@ export function Relatorios({ clienteInicialId, onClienteInicialConsumido }) {
                   <div>
                     <label className={labelClass}>Geração Mês Anterior (Banco)</label>
                     <div className="relative">
-                      <input type="text" value={geracaoAnterior} onChange={(e) => setGeracaoAnterior(e.target.value)} placeholder="0.00" className={`${inputClass} !bg-slate-100`} />
+                      <input type="text" value={geracaoAnterior} disabled readOnly placeholder="0.00" className={`${inputClass} !bg-slate-100 !cursor-not-allowed !text-slate-500`} />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">kWh</span>
                     </div>
                   </div>
