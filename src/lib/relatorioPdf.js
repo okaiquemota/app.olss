@@ -92,17 +92,6 @@ const infoRow = (label, valor) => ({
   margin: [0, 0, 0, 5]
 });
 
-// Ícone de grade decorativo (mesmo espírito do logo em malha usado no material antigo da OLSS)
-const gridMark = (size = 26, cor = '#1F7A5C') => {
-  const linhas = [];
-  const passo = size / 4;
-  for (let i = 0; i <= 4; i++) {
-    linhas.push({ type: 'line', x1: i * passo, y1: 0, x2: i * passo, y2: size, lineWidth: 0.75, lineColor: cor });
-    linhas.push({ type: 'line', x1: 0, y1: i * passo, x2: size, y2: i * passo, lineWidth: 0.75, lineColor: cor });
-  }
-  return { width: size, canvas: linhas };
-};
-
 export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economiaTotal, historicoGrafico }) => {
 
   const diferenca = relatorio.geracao_atual - relatorio.geracao_anterior;
@@ -184,44 +173,36 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
   // =========================================================
   const docDefinition = {
     pageSize: 'A4',
-    pageMargins: [40, 110, 40, 90],
+    pageMargins: [40, 100, 40, 55],
 
     header: function (currentPage, pageCount, pageSize) {
       return {
-        stack: [
-          {
-            table: {
-              widths: ['*', 'auto'],
-              body: [[
+        table: {
+          widths: ['*'],
+          body: [[
+            {
+              fillColor: corOlss,
+              margin: [40, 22, 40, 22],
+              columns: [
                 {
-                  fillColor: corOlss,
-                  margin: [40, 22, 0, 22],
+                  width: '*',
                   stack: [
                     { text: 'RELATÓRIO MENSAL', style: 'bannerTitle' },
                     { text: (relatorio.mes_referencia || '').toUpperCase(), style: 'bannerSub' }
                   ]
                 },
                 {
-                  fillColor: corOlss,
-                  margin: [0, 22, 40, 22],
-                  columns: [
-                    gridMark(26, '#1F7A5C'),
-                    { width: 8, text: '' },
-                    {
-                      width: 'auto',
-                      stack: [
-                        { text: 'OLSS', style: 'bannerBrand' },
-                        { text: 'LIMPEZA E MONITORAMENTO\nFOTOVOLTAICO', style: 'bannerBrandSub' }
-                      ]
-                    }
+                  width: 'auto',
+                  stack: [
+                    { text: 'OLSS', style: 'bannerBrand' },
+                    { text: 'LIMPEZA E MONITORAMENTO FOTOVOLTAICO', style: 'bannerBrandSub' }
                   ]
                 }
-              ]]
-            },
-            layout: 'noBorders'
-          },
-          { canvas: [{ type: 'rect', x: 0, y: 0, w: pageSize.width, h: 3, color: corAccent }] }
-        ]
+              ]
+            }
+          ]]
+        },
+        layout: 'noBorders'
       };
     },
 
@@ -265,28 +246,25 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
           { canvas: [{ type: 'rect', x: 0, y: 0, w: pageSize.width, h: 2, color: corAccent }] },
           {
             table: {
-              widths: ['*', 'auto'],
+              widths: ['*'],
               body: [[
                 {
                   fillColor: corOlss,
-                  margin: [40, 14, 0, 14],
-                  stack: [
-                    { text: 'OTÁVIO LAVEZZO', style: 'footerName' },
-                    { text: 'Diretor Proprietário  ·  (16) 98849-4891  ·  otavio.olss1@gmail.com', style: 'footerContact' }
-                  ]
-                },
-                {
-                  fillColor: corOlss,
-                  margin: [0, 14, 40, 14],
-                  alignment: 'right',
-                  stack: [
+                  margin: [40, 14, 40, 14],
+                  columns: [
                     {
-                      table: {
-                        widths: ['auto'],
-                        body: [[{ text: `PÁGINA ${currentPage}/${pageCount}`, style: 'footerPageBadge', fillColor: '#0D6B52', margin: [8, 4, 8, 4] }]]
-                      },
-                      layout: 'noBorders',
-                      alignment: 'right'
+                      width: '*',
+                      stack: [
+                        { text: 'OTÁVIO LAVEZZO', style: 'footerName' },
+                        { text: 'Diretor Proprietário  ·  (16) 98849-4891  ·  otavio.olss1@gmail.com', style: 'footerContact' }
+                      ]
+                    },
+                    {
+                      width: 'auto',
+                      stack: [
+                        { text: `PÁGINA ${currentPage}/${pageCount}`, style: 'footerPageBadge' },
+                        { text: 'DESENVOLVIDO POR MOVCODE', style: 'footerDevCredit' }
+                      ]
                     }
                   ]
                 }
@@ -305,7 +283,8 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
       bannerBrandSub: { fontSize: 6, bold: true, color: '#A7F3D0', alignment: 'right', margin: [0, 2, 0, 0], lineHeight: 1.3 },
       footerName: { fontSize: 9, bold: true, color: '#FFFFFF' },
       footerContact: { fontSize: 7.5, color: '#A7F3D0', margin: [0, 2, 0, 0] },
-      footerPageBadge: { fontSize: 7.5, bold: true, color: '#FFFFFF' },
+      footerPageBadge: { fontSize: 7.5, bold: true, color: '#FFFFFF', alignment: 'right' },
+      footerDevCredit: { fontSize: 5.5, bold: true, color: '#5FA98A', alignment: 'right', margin: [0, 3, 0, 0] },
       sectionTitle: { fontSize: 11, bold: true, color: '#1E293B' },
       paragraph: { fontSize: 10, color: corText, lineHeight: 1.4, alignment: 'justify' },
       list: { fontSize: 10, color: corText, lineHeight: 1.6, margin: [10, 0, 0, 0] },
@@ -354,7 +333,7 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
     {
       table: {
         headerRows: 1,
-        widths: ['auto', '*', 'auto', 'auto', 'auto', 'auto', 'auto'],
+        widths: ['*', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
         body: [
           [
             { text: 'UC', style: 'tableHeader' }, { text: 'CONSUMO\nTOTAL KWH', style: 'tableHeader' },
