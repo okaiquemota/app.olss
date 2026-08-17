@@ -14,6 +14,7 @@ import {
 import { CopyButton } from '../components/CopyButton';
 import { supabase } from '../lib/supabase';
 import { gerarPdfRelatorio } from '../lib/relatorioPdf';
+import { montarHistoricoGrafico } from '../lib/historicoGrafico';
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -104,13 +105,19 @@ export function HistoricoRelatorios({ onCriarRelatorio }) {
     URL.revokeObjectURL(url);
   };
 
-  const baixarPDFRelatorio = (cliente, relatorio) => {
+  const baixarPDFRelatorio = async (cliente, relatorio) => {
     setGerandoPDF(true);
     try {
-      gerarPdfRelatorio({
+      const ucs = relatorio.faturas_cpfl?.ucs || [];
+      const economiaTotal = ucs.reduce((acc, u) => acc + (u.economia || 0), 0);
+      const historicoGrafico = montarHistoricoGrafico(relatorios, cliente.id);
+
+      await gerarPdfRelatorio({
         cliente,
         relatorio,
-        unidades: relatorio.faturas_cpfl,
+        unidades: ucs,
+        economiaTotal,
+        historicoGrafico,
       });
     } catch (err) {
       alert('Erro ao gerar PDF: ' + err.message);

@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
-import { 
-  FileText, Zap, PenTool, Calculator, ArrowRight, 
-  Search, Plus, Loader2, Calendar, TrendingUp, TrendingDown,
-  CheckCircle2, Minus, X, MapPin, Key, Lock, Copy
+import {
+  FileText, Zap, PenTool, Calculator,
+  Search, Plus, Loader2, TrendingUp, TrendingDown,
+  CheckCircle2, X, MapPin, Key, Lock, Copy
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { gerarPdfRelatorio } from '../lib/relatorioPdf';
+import { montarHistoricoGrafico } from '../lib/historicoGrafico';
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
 export function Relatorios({ clienteInicialId, onClienteInicialConsumido }) {
   const [clientes, setClientes] = useState([]);
-  const [plataformas, setPlataformas] = useState([]);
   const [relatorios, setRelatorios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState('');
@@ -42,11 +42,9 @@ export function Relatorios({ clienteInicialId, onClienteInicialConsumido }) {
   const fetchData = async () => {
     setLoading(true);
     const resClientes = await supabase.from('clientes').select('*').order('nome_razao_social');
-    const resPlataformas = await supabase.from('plataformas').select('*').order('nome');
     const resRelatorios = await supabase.from('relatorios').select('*').order('created_at', { ascending: false });
-    
+
     if (resClientes.data) setClientes(resClientes.data);
-    if (resPlataformas.data) setPlataformas(resPlataformas.data);
     if (resRelatorios.data) setRelatorios(resRelatorios.data);
     setLoading(false);
   };
@@ -114,6 +112,18 @@ export function Relatorios({ clienteInicialId, onClienteInicialConsumido }) {
   const clientesFiltrados = clientes.filter(c => c.nome_razao_social?.toLowerCase().includes(busca.toLowerCase()));
   const buscarRelatorio = (clienteId, mesLabel) => relatorios.find(r => r.cliente_id === clienteId && r.mes_referencia === mesLabel);
 
+  // Abre o modal automaticamente quando chega um cliente vindo do Histórico ("Prosseguir")
+  useEffect(() => {
+    if (!clienteInicialId || clientes.length === 0) return;
+    const cliente = clientes.find(c => c.id === clienteInicialId);
+    if (cliente) {
+      const mesLabel = mesesColunas.at(-1)?.label || '';
+      abrirModal(cliente, mesLabel, buscarRelatorio(cliente.id, mesLabel));
+    }
+    onClienteInicialConsumido?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteInicialId, clientes]);
+
   const handleUnidadeChange = (id, campo, valor) => {
     setUnidades(unidades.map(u => u.id === id ? { ...u, [campo]: valor } : u));
   };
@@ -129,7 +139,7 @@ export function Relatorios({ clienteInicialId, onClienteInicialConsumido }) {
     const preco = parseNum(unidade.precoKwh);
     const tarifa = parseNum(unidade.tarifaConta);
     const valorComSistema = parseNum(unidade.valorConta);
-    let consumoTotalUC = 0; let autoconsumo = 0;
+    let consumoTotalUC; let autoconsumo = 0;
 
     if (unidade.tipo === 'Geradora') {
       const injetada = parseNum(unidade.energiaInjetada);
@@ -175,43 +185,11 @@ export function Relatorios({ clienteInicialId, onClienteInicialConsumido }) {
       }
 
       if (gerarPdf) {
-        // ==========================================
-        // CORREÇÃO DO GRÁFICO (Deduplicação e Ordem Real)
-        // ==========================================
-        const MESES_MAP = { 'Jan': 1, 'Fev': 2, 'Mar': 3, 'Abr': 4, 'Mai': 5, 'Jun': 6, 'Jul': 7, 'Ago': 8, 'Set': 9, 'Out': 10, 'Nov': 11, 'Dez': 12 };
-        
-        const historicoBruto = relatorios.filter(r => r.cliente_id === clienteSelecionado.id && r.id !== relatorioEditandoId);
-        
-        historicoBruto.push({ 
-          mes_referencia: mesReferencia, 
-          geracao_atual: geracaoAtualNum 
-        });
-
-        // Ordena de forma CRONOLÓGICA (Mês/Ano) e não por data de criação
-        historicoBruto.sort((a, b) => {
-          const partsA = a.mes_referencia.split('/');
-          const partsB = b.mes_referencia.split('/');
-          const mesA = partsA[0];
-          const anoA = partsA[1] || new Date().getFullYear();
-          const mesB = partsB[0];
-          const anoB = partsB[1] || new Date().getFullYear();
-          
-          return (parseInt(anoA) * 100 + MESES_MAP[mesA]) - (parseInt(anoB) * 100 + MESES_MAP[mesB]);
-        });
-
-        // Agrupa pegando sempre o mais recente caso haja duplicata
-        // Chave = mes_referencia completo (mês + ano) para não colidir meses iguais de anos diferentes
-        const historicoAgrupado = {};
-        historicoBruto.forEach(r => {
-          historicoAgrupado[r.mes_referencia] = parseFloat(r.geracao_atual) || 0;
-        });
-
-        // Pega apenas os últimos 6 meses gerados (já ordenados cronologicamente)
-        const chavesMeses = Object.keys(historicoAgrupado).slice(-6);
-        const historicoGraficoLimpo = chavesMeses.map(chave => ({
-          mes: chave.substring(0, 3), // label curto (ex: "Jun") só para exibição no gráfico
-          geracao: historicoAgrupado[chave]
-        }));
+        const historicoGraficoLimpo = montarHistoricoGrafico(
+          relatorios.filter(r => r.id !== relatorioEditandoId),
+          clienteSelecionado.id,
+          { mes_referencia: mesReferencia, geracao_atual: geracaoAtualNum }
+        );
 
         await gerarPdfRelatorio({
           cliente: clienteSelecionado,
