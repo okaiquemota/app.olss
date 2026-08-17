@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Activity,
   FileText,
   History,
   LayoutDashboard,
+  Loader2,
   LogOut,
   Map,
   Menu,
@@ -16,11 +17,13 @@ import {
 
 import { Clientes } from './pages/Clientes';
 import { HistoricoRelatorios } from './pages/HistoricoRelatorios';
+import { Login } from './pages/Login';
 import { MapaUsinas } from './pages/MapaUsinas';
 import { Monitoramento } from './pages/Monitoramento';
 import { Pendencias } from './pages/Pendencias';
 import { Relatorios } from './pages/Relatorios';
 import { VisaoGeral } from './pages/VisaoGeral';
+import { supabase } from './lib/supabase';
 
 const MENU_SECTIONS = [
   {
@@ -78,9 +81,20 @@ function MenuItem({ id, icon: Icone, label, telaAtiva, onSelect }) {
 }
 
 function App() {
+  const [sessao, setSessao] = useState(undefined); // undefined = verificando, null = deslogado
   const [telaAtiva, setTelaAtiva] = useState('dashboard');
   const [menuAberto, setMenuAberto] = useState(true);
   const [relatorioClienteInicialId, setRelatorioClienteInicialId] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSessao(data.session));
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_evento, novaSessao) => {
+      setSessao(novaSessao);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   const selecionarTela = (id) => {
     setTelaAtiva(id);
@@ -91,6 +105,18 @@ function App() {
     setRelatorioClienteInicialId(clienteId);
     setTelaAtiva('relatorios');
   };
+
+  if (sessao === undefined) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-[#F3F4F6] text-gray-500">
+        <Loader2 className="animate-spin" size={24} />
+      </div>
+    );
+  }
+
+  if (!sessao) {
+    return <Login />;
+  }
 
   return (
     <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden antialiased text-sm text-gray-800">
@@ -145,8 +171,15 @@ function App() {
         </nav>
 
         <div className="border-t border-gray-200 py-2">
+          <p className="px-3 pb-1.5 text-[11px] text-gray-400 font-medium truncate" title={sessao.user?.email}>
+            {sessao.user?.email}
+          </p>
           <MenuItem id="configuracoes" icon={Settings} label="Configurações" telaAtiva={telaAtiva} onSelect={selecionarTela} />
-          <button className="w-full flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors font-medium text-[13px] cursor-pointer border-l-2 border-transparent">
+          <button
+            type="button"
+            onClick={() => supabase.auth.signOut()}
+            className="w-full flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors font-medium text-[13px] cursor-pointer border-l-2 border-transparent"
+          >
             <LogOut size={17} strokeWidth={1.8} />
             Sair do Sistema
           </button>
