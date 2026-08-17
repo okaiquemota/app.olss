@@ -20,6 +20,7 @@ import { MapaUsinas } from './pages/MapaUsinas';
 import { Monitoramento } from './pages/Monitoramento';
 import { Pendencias } from './pages/Pendencias';
 import { Relatorios } from './pages/Relatorios';
+import { VisaoGeral } from './pages/VisaoGeral';
 
 const MENU_SECTIONS = [
   {
@@ -77,7 +78,7 @@ function MenuItem({ id, icon: Icone, label, telaAtiva, onSelect }) {
 }
 
 function App() {
-  const [telaAtiva, setTelaAtiva] = useState('clientes');
+  const [telaAtiva, setTelaAtiva] = useState('dashboard');
   const [menuAberto, setMenuAberto] = useState(true);
   const [relatorioClienteInicialId, setRelatorioClienteInicialId] = useState(null);
 
@@ -173,6 +174,7 @@ function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-3 md:p-4">
+          {telaAtiva === 'dashboard' && <VisaoGeral />}
           {telaAtiva === 'relatorios' && (
             <Relatorios
               clienteInicialId={relatorioClienteInicialId}
@@ -187,7 +189,7 @@ function App() {
           {telaAtiva === 'mapa' && <MapaUsinas />}
           {telaAtiva === 'historico' && <HistoricoRelatorios onCriarRelatorio={abrirCriacaoRelatorio} />}
 
-          {!['relatorios', 'clientes', 'pendencias', 'monitoramento', 'mapa', 'historico'].includes(telaAtiva) && (
+          {!['dashboard', 'relatorios', 'clientes', 'pendencias', 'monitoramento', 'mapa', 'historico'].includes(telaAtiva) && (
             <div className="h-full border border-dashed border-gray-300 bg-white flex items-center justify-center">
               <div className="text-center">
                 <Activity size={28} strokeWidth={1.5} className="mx-auto mb-3 text-gray-300" />

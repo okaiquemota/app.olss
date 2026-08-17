@@ -175,7 +175,7 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
     pageSize: 'A4',
     pageMargins: [40, 100, 40, 55],
 
-    header: function (currentPage, pageCount, pageSize) {
+    header: function () {
       return {
         table: {
           widths: ['*'],

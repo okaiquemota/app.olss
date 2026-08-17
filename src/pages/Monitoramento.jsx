@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { 
-  Search, Download, LayoutGrid, Copy, ExternalLink, Loader2, Filter, X, Trash2, Plus
+import {
+  Search, Download, LayoutGrid, Copy, ExternalLink, Loader2, Filter, X, Trash2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -126,6 +126,29 @@ export function Monitoramento() {
     }
   };
 
+  const exportarCSV = () => {
+    // Login/senha ficam de fora do export por segurança (arquivo CSV costuma circular sem criptografia)
+    const header = ['Cliente', 'Plataforma', 'Status', 'Observações'];
+    const linhas = dadosFiltrados.map(item => [
+      item.nome_razao_social,
+      item.plataforma_inversor || '',
+      item.status_monitoramento || 'normal',
+      item.observacoes_internas || ''
+    ]);
+
+    const csv = [header, ...linhas]
+      .map(linha => linha.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
+
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Monitoramento_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const getLinkPlataforma = (nome) => {
     const plat = plataformas.find(p => p.nome?.toLowerCase() === nome?.toLowerCase());
     return plat?.link || null;
@@ -224,7 +247,7 @@ export function Monitoramento() {
                </div>
             </div>
 
-            <button className="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-none text-[12px] font-medium hover:bg-gray-100 transition-all cursor-pointer">
+            <button onClick={exportarCSV} className="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-none text-[12px] font-medium hover:bg-gray-100 transition-all cursor-pointer">
               <Download size={14} /> Exportar
             </button>
             
