@@ -21,7 +21,7 @@ export function CopyButton({ text }) {
       <button
         type="button"
         onClick={handleCopy}
-        className="text-gray-400 hover:text-green-600 transition-colors opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-green-50 cursor-pointer shrink-0"
+        className="text-gray-400 hover:text-green-600 transition-colors opacity-0 group-hover:opacity-100 p-1.5 rounded-none hover:bg-green-50 cursor-pointer shrink-0"
         title="Copiar"
       >
         {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}
