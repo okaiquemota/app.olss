@@ -7,6 +7,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { gerarPdfRelatorio } from '../lib/relatorioPdf';
 import { montarHistoricoGrafico } from '../lib/historicoGrafico';
+import { calcularEconomiaAcumuladaAno } from '../lib/economia';
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -185,10 +186,20 @@ export function Relatorios({ clienteInicialId, onClienteInicialConsumido }) {
       }
 
       if (gerarPdf) {
+        const relatoriosOutros = relatorios.filter(r => r.id !== relatorioEditandoId);
+        const relatorioAtualParaCalculo = { mes_referencia: mesReferencia, faturas_cpfl: { ucs: unidadesComResultado } };
+
         const historicoGraficoLimpo = montarHistoricoGrafico(
-          relatorios.filter(r => r.id !== relatorioEditandoId),
+          relatoriosOutros,
           clienteSelecionado.id,
           { mes_referencia: mesReferencia, geracao_atual: geracaoAtualNum }
+        );
+
+        const economiaAcumuladaAno = calcularEconomiaAcumuladaAno(
+          relatoriosOutros,
+          clienteSelecionado.id,
+          mesReferencia,
+          relatorioAtualParaCalculo
         );
 
         await gerarPdfRelatorio({
@@ -196,7 +207,8 @@ export function Relatorios({ clienteInicialId, onClienteInicialConsumido }) {
           relatorio: payload,
           unidades: unidadesComResultado,
           economiaTotal,
-          historicoGrafico: historicoGraficoLimpo
+          historicoGrafico: historicoGraficoLimpo,
+          economiaAcumuladaAno
         });
       }
 

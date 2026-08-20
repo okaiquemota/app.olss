@@ -4,13 +4,9 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts';
 import { supabase } from '../lib/supabase';
+import { somarEconomiaRelatorio } from '../lib/economia';
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-
-const somarEconomiaRelatorio = (relatorio) => {
-  const ucs = relatorio.faturas_cpfl?.ucs || [];
-  return ucs.reduce((acc, u) => acc + (u.economia || 0), 0);
-};
 
 const TooltipCustomizado = ({ active, payload, label }) => {
   if (!active || !payload || !payload.length) return null;
