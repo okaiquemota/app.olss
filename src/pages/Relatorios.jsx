@@ -11,7 +11,7 @@ import { calcularEconomiaAcumuladaAno } from '../lib/economia';
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-export function Relatorios({ clienteInicialId, onClienteInicialConsumido }) {
+export function Relatorios() {
   const [clientes, setClientes] = useState([]);
   const [relatorios, setRelatorios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -112,18 +112,6 @@ export function Relatorios({ clienteInicialId, onClienteInicialConsumido }) {
 
   const clientesFiltrados = clientes.filter(c => c.nome_razao_social?.toLowerCase().includes(busca.toLowerCase()));
   const buscarRelatorio = (clienteId, mesLabel) => relatorios.find(r => r.cliente_id === clienteId && r.mes_referencia === mesLabel);
-
-  // Abre o modal automaticamente quando chega um cliente vindo do Histórico ("Prosseguir")
-  useEffect(() => {
-    if (!clienteInicialId || clientes.length === 0) return;
-    const cliente = clientes.find(c => c.id === clienteInicialId);
-    if (cliente) {
-      const mesLabel = mesesColunas.at(-1)?.label || '';
-      abrirModal(cliente, mesLabel, buscarRelatorio(cliente.id, mesLabel));
-    }
-    onClienteInicialConsumido?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clienteInicialId, clientes]);
 
   const handleUnidadeChange = (id, campo, valor) => {
     setUnidades(unidades.map(u => u.id === id ? { ...u, [campo]: valor } : u));

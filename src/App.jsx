@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   Activity,
   FileText,
-  History,
   LayoutDashboard,
   Loader2,
   LogOut,
@@ -16,7 +15,7 @@ import {
 } from 'lucide-react';
 
 import { Clientes } from './pages/Clientes';
-import { HistoricoRelatorios } from './pages/HistoricoRelatorios';
+import { Configuracoes } from './pages/Configuracoes';
 import { Login } from './pages/Login';
 import { MapaUsinas } from './pages/MapaUsinas';
 import { Monitoramento } from './pages/Monitoramento';
@@ -45,7 +44,6 @@ const MENU_SECTIONS = [
     label: 'Faturamento',
     items: [
       { id: 'relatorios', icon: FileText, label: 'Relatórios' },
-      { id: 'historico', icon: History, label: 'Histórico Mensal' },
     ],
   },
 ];
@@ -57,7 +55,6 @@ const PAGE_TITLES = {
   mapa: 'Mapa de Usinas',
   monitoramento: 'Monitoramento',
   relatorios: 'Relatórios',
-  historico: 'Histórico Mensal',
   configuracoes: 'Configurações',
 };
 
@@ -84,7 +81,6 @@ function App() {
   const [sessao, setSessao] = useState(undefined); // undefined = verificando, null = deslogado
   const [telaAtiva, setTelaAtiva] = useState('dashboard');
   const [menuAberto, setMenuAberto] = useState(true);
-  const [relatorioClienteInicialId, setRelatorioClienteInicialId] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSessao(data.session));
@@ -99,11 +95,6 @@ function App() {
   const selecionarTela = (id) => {
     setTelaAtiva(id);
     if (window.innerWidth < 768) setMenuAberto(false);
-  };
-
-  const abrirCriacaoRelatorio = (clienteId) => {
-    setRelatorioClienteInicialId(clienteId);
-    setTelaAtiva('relatorios');
   };
 
   if (sessao === undefined) {
@@ -208,21 +199,14 @@ function App() {
 
         <div className="flex-1 overflow-y-auto p-3 md:p-4">
           {telaAtiva === 'dashboard' && <VisaoGeral />}
-          {telaAtiva === 'relatorios' && (
-            <Relatorios
-              clienteInicialId={relatorioClienteInicialId}
-              onClienteInicialConsumido={() => setRelatorioClienteInicialId(null)}
-            />
-          )}
+          {telaAtiva === 'relatorios' && <Relatorios />}
           {telaAtiva === 'clientes' && <Clientes />}
           {telaAtiva === 'pendencias' && <Pendencias />}
-          
-          {telaAtiva === 'monitoramento' && <Monitoramento onCriarRelatorio={abrirCriacaoRelatorio} />}
-          
+          {telaAtiva === 'monitoramento' && <Monitoramento />}
           {telaAtiva === 'mapa' && <MapaUsinas />}
-          {telaAtiva === 'historico' && <HistoricoRelatorios onCriarRelatorio={abrirCriacaoRelatorio} />}
+          {telaAtiva === 'configuracoes' && <Configuracoes />}
 
-          {!['dashboard', 'relatorios', 'clientes', 'pendencias', 'monitoramento', 'mapa', 'historico'].includes(telaAtiva) && (
+          {!['dashboard', 'relatorios', 'clientes', 'pendencias', 'monitoramento', 'mapa', 'configuracoes'].includes(telaAtiva) && (
             <div className="h-full border border-dashed border-gray-300 bg-white flex items-center justify-center">
               <div className="text-center">
                 <Activity size={28} strokeWidth={1.5} className="mx-auto mb-3 text-gray-300" />
