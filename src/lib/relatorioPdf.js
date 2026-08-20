@@ -92,7 +92,7 @@ const infoRow = (label, valor) => ({
   margin: [0, 0, 0, 5]
 });
 
-export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economiaTotal, historicoGrafico }) => {
+export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economiaTotal, historicoGrafico, economiaAcumuladaAno }) => {
 
   const diferenca = relatorio.geracao_atual - relatorio.geracao_anterior;
   const statusDiferenca = diferenca >= 0 ? 'aumento' : 'perda';
@@ -101,6 +101,8 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
     : ' mantendo a mesma média do mês anterior';
 
   const geradora = unidades.find(u => u.tipo === 'Geradora');
+  const anoReferencia = (relatorio.mes_referencia || '').split('/')[1] || '';
+  const formatarMoeda = (valor) => (valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   // =========================================================
   // GERAÇÃO DO GRÁFICO (QuickChart API)
@@ -227,7 +229,7 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
             diferenca >= 0 ? corPositivo : corNegativo,
             diferenca >= 0 ? corPositivo : corNegativo
           ),
-          kpiCard('Economia Total', `R$ ${economiaTotal.toFixed(2).replace('.', ',')}`, corPositivo, corAccent)
+          kpiCard('Economia Total', formatarMoeda(economiaTotal), corPositivo, corAccent)
         ]
       },
 
@@ -365,16 +367,33 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
       margin: [0, 0, 0, 12]
     },
 
-    // BANNER DE ECONOMIA TOTAL
+    // BANNER DE ECONOMIA (MÊS + ACUMULADO NO ANO)
     {
-      table: {
-        widths: ['*', 'auto'],
-        body: [[
-          { text: 'ECONOMIA TOTAL DO MÊS', style: 'economiaLabel', fillColor: corOlss, margin: [16, 12, 0, 12] },
-          { text: `R$ ${economiaTotal.toFixed(2).replace('.', ',')}`, style: 'economiaValue', fillColor: corOlss, alignment: 'right', margin: [0, 12, 16, 12] }
-        ]]
-      },
-      layout: 'noBorders',
+      columns: [
+        {
+          width: '*',
+          table: {
+            widths: ['*', 'auto'],
+            body: [[
+              { text: 'ECONOMIA DO MÊS', style: 'economiaLabel', fillColor: corOlss, margin: [16, 12, 0, 12] },
+              { text: formatarMoeda(economiaTotal), style: 'economiaValue', fillColor: corOlss, alignment: 'right', margin: [0, 12, 16, 12] }
+            ]]
+          },
+          layout: 'noBorders'
+        },
+        { width: 6, text: '' },
+        {
+          width: '*',
+          table: {
+            widths: ['*', 'auto'],
+            body: [[
+              { text: `ACUMULADO EM ${anoReferencia}`, style: 'economiaLabel', fillColor: corAccent, margin: [16, 12, 0, 12] },
+              { text: formatarMoeda(economiaAcumuladaAno), style: 'economiaValue', fillColor: corAccent, alignment: 'right', margin: [0, 12, 16, 12] }
+            ]]
+          },
+          layout: 'noBorders'
+        }
+      ],
       margin: [0, 0, 0, 20]
     },
 
