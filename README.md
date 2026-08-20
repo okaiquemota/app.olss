@@ -1,16 +1,43 @@
-# React + Vite
+# OLSS — Operacional
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Painel interno para gestão operacional de usinas solares: cadastro de clientes/usinas, mapa, monitoramento, lembretes e geração de relatórios mensais em PDF.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19 + Vite
+- Tailwind CSS
+- Supabase (autenticação + banco de dados com Row Level Security)
+- React Leaflet (mapa de usinas)
+- Recharts (gráficos)
+- jsPDF / pdfmake (geração de relatórios em PDF)
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+cp .env.example .env
+```
 
-## Expanding the ESLint configuration
+Preencha o `.env` com os dados do projeto Supabase (Project Settings → API):
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```
+VITE_SUPABASE_URL=https://xxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_...
+```
+
+Use a **publishable key** (anon), nunca a secret key — este projeto é só frontend e a secret key não deve ir para nenhum arquivo do repositório.
+
+```bash
+npm run dev
+```
+
+### Acesso
+
+Não existe cadastro público. Para criar um usuário, use o painel do Supabase → Authentication → Users → Add User (marcando "Auto Confirm User"). As policies de RLS estão em [`supabase/rls.sql`](supabase/rls.sql).
+
+## Scripts
+
+- `npm run dev` — ambiente de desenvolvimento
+- `npm run build` — build de produção
+- `npm run lint` — lint do código
+- `npm run preview` — preview do build de produção

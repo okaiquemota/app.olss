@@ -36,7 +36,7 @@ const MENU_SECTIONS = [
   {
     label: 'Operação',
     items: [
-      { id: 'clientes', icon: Users, label: 'Cadastros' }, // <-- NOME ALTERADO AQUI
+      { id: 'clientes', icon: Users, label: 'Cadastros' },
       { id: 'mapa', icon: Map, label: 'Mapa de Usinas' },
       { id: 'monitoramento', icon: Activity, label: 'Monitoramento' },
     ],
@@ -53,7 +53,7 @@ const MENU_SECTIONS = [
 const PAGE_TITLES = {
   dashboard: 'Visão Geral',
   pendencias: 'Lembretes',
-  clientes: 'Cadastros', // <-- NOME ALTERADO AQUI TAMBÉM
+  clientes: 'Cadastros',
   mapa: 'Mapa de Usinas',
   monitoramento: 'Monitoramento',
   relatorios: 'Relatórios',
