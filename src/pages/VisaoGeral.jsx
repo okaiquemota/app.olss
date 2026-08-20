@@ -133,9 +133,9 @@ export function VisaoGeral() {
                 <YAxis tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} width={36} unit="%" />
                 <Tooltip content={<TooltipCustomizado />} cursor={{ fill: '#F1F5F9' }} />
                 <Legend wrapperStyle={{ fontSize: 11, fontWeight: 600 }} />
-                <Bar dataKey="Com Contrato" fill="#15803d" radius={[3, 3, 0, 0]} maxBarSize={28} />
-                <Bar dataKey="Sem Contrato" fill="#dc2626" radius={[3, 3, 0, 0]} maxBarSize={28} />
-                <Bar dataKey="Em Prospecção" fill="#ca8a04" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                <Bar dataKey="Com Contrato" stackId="status" fill="#15803d" maxBarSize={40} />
+                <Bar dataKey="Sem Contrato" stackId="status" fill="#dc2626" maxBarSize={40} />
+                <Bar dataKey="Em Prospecção" stackId="status" fill="#ca8a04" radius={[3, 3, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
           )}
