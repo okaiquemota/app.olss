@@ -15,6 +15,7 @@ import { CopyButton } from '../components/CopyButton';
 import { supabase } from '../lib/supabase';
 import { gerarPdfRelatorio } from '../lib/relatorioPdf';
 import { montarHistoricoGrafico } from '../lib/historicoGrafico';
+import { somarEconomiaRelatorio, calcularEconomiaAcumuladaAno } from '../lib/economia';
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -109,8 +110,9 @@ export function HistoricoRelatorios({ onCriarRelatorio }) {
     setGerandoPDF(true);
     try {
       const ucs = relatorio.faturas_cpfl?.ucs || [];
-      const economiaTotal = ucs.reduce((acc, u) => acc + (u.economia || 0), 0);
+      const economiaTotal = somarEconomiaRelatorio(relatorio);
       const historicoGrafico = montarHistoricoGrafico(relatorios, cliente.id);
+      const economiaAcumuladaAno = calcularEconomiaAcumuladaAno(relatorios, cliente.id, relatorio.mes_referencia);
 
       await gerarPdfRelatorio({
         cliente,
@@ -118,6 +120,7 @@ export function HistoricoRelatorios({ onCriarRelatorio }) {
         unidades: ucs,
         economiaTotal,
         historicoGrafico,
+        economiaAcumuladaAno,
       });
     } catch (err) {
       alert('Erro ao gerar PDF: ' + err.message);
