@@ -18,6 +18,7 @@ export function Clientes() {
   const [view, setView] = useState('lista'); 
   
   const [clientesLista, setClientesLista] = useState([]);
+  const [plataformas, setPlataformas] = useState([]);
   const [loadingLista, setLoadingLista] = useState(true);
   
   // Filtros da tabela
@@ -100,8 +101,15 @@ export function Clientes() {
     setLoadingLista(false);
   };
 
+  // Plataformas cadastradas em Configurações, usadas no select do Portal Inversor
+  const fetchPlataformas = async () => {
+    const { data } = await supabase.from('plataformas').select('nome').order('nome');
+    setPlataformas((data || []).map(p => p.nome).filter(Boolean));
+  };
+
   useEffect(() => {
     fetchClientes();
+    fetchPlataformas();
   }, []);
 
   useEffect(() => {
@@ -286,6 +294,11 @@ export function Clientes() {
       </div>
     );
   };
+
+  // Cliente antigo pode ter uma plataforma digitada à mão, antes do campo virar
+  // lista. Nesse caso o valor entra como opção extra para não se perder ao salvar.
+  const plataformaForaDaLista = Boolean(formData.plataforma_inversor)
+    && !plataformas.some(p => p.toLowerCase() === formData.plataforma_inversor.toLowerCase());
 
   const inputClass = "w-full bg-white border border-gray-400 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-all rounded-none placeholder:text-gray-500";
   const labelClass = "block text-[11px] font-bold text-gray-700 mb-1.5 uppercase tracking-wider flex items-center gap-1.5";
@@ -636,7 +649,33 @@ export function Clientes() {
                       <div className="border border-gray-400 bg-white p-3">
                         <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Activity size={13}/> Portal Inversor</label>
                         <div className="space-y-2">
-                          <input type="text" name="plataforma_inversor" value={formData.plataforma_inversor} onChange={handleChange} placeholder="Nome da Plataforma" className={inputClass} />
+                          <select
+                            name="plataforma_inversor"
+                            value={formData.plataforma_inversor}
+                            onChange={handleChange}
+                            className={`${inputClass} font-medium text-gray-800 cursor-pointer`}
+                          >
+                            <option value="">Selecione a plataforma...</option>
+                            {plataformas.map(p => <option key={p} value={p}>{p}</option>)}
+                            {/* Mantém o valor antigo digitado à mão, para a edição não apagá-lo */}
+                            {plataformaForaDaLista && (
+                              <option value={formData.plataforma_inversor}>
+                                {formData.plataforma_inversor} (não cadastrada)
+                              </option>
+                            )}
+                          </select>
+
+                          {plataformas.length === 0 && (
+                            <p className="text-[11px] text-gray-600">
+                              Nenhuma plataforma cadastrada ainda — cadastre em Configurações.
+                            </p>
+                          )}
+                          {plataformaForaDaLista && (
+                            <p className="text-[11px] text-yellow-800">
+                              Esta plataforma não está em Configurações, então o link não abre no Monitoramento.
+                            </p>
+                          )}
+
                           <input type="text" name="login_app" value={formData.login_app} onChange={handleChange} placeholder="Login do Aplicativo" className={inputClass} />
                           <input type="text" name="senha_app" value={formData.senha_app} onChange={handleChange} placeholder="Senha do Aplicativo" className={inputClass} />
                         </div>
