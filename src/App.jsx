@@ -7,6 +7,7 @@ import {
   LogOut,
   Map,
   Menu,
+  AlertCircle,
   Settings,
   StickyNote,
   Users,
@@ -15,7 +16,9 @@ import {
 } from 'lucide-react';
 
 import { Login } from './pages/Login';
+import { DefinirSenha } from './pages/DefinirSenha';
 import { supabase } from './lib/supabase';
+import { linkAuth } from './lib/linkAuth';
 
 // Cada tela vira um chunk próprio: quem abre só "Lembretes" não baixa o
 // gerador de PDF (Relatórios), o Leaflet (Mapa) nem o Recharts (Visão Geral).
@@ -86,10 +89,16 @@ function App() {
   const [menuAberto, setMenuAberto] = useState(true);
   const [confirmandoSaida, setConfirmandoSaida] = useState(false);
 
+  // Chegou por link de convite ou de redefinição de senha
+  const [definindoSenha, setDefinindoSenha] = useState(linkAuth.tipo);
+  const [erroLink, setErroLink] = useState(linkAuth.erro);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSessao(data.session));
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_evento, novaSessao) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((evento, novaSessao) => {
+      // Disparado quando a pessoa abre o link de "esqueci minha senha"
+      if (evento === 'PASSWORD_RECOVERY') setDefinindoSenha('recovery');
       setSessao(novaSessao);
     });
 
@@ -109,12 +118,39 @@ function App() {
     if (window.innerWidth < 768) setMenuAberto(false);
   };
 
+  // Link de e-mail vencido ou já usado
+  if (erroLink) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-gray-200 p-4">
+        <div className="w-full max-w-sm bg-white border border-gray-400 shadow-sm p-6 flex flex-col items-center text-center gap-3">
+          <div className="w-10 h-10 bg-red-600 text-white flex items-center justify-center">
+            <AlertCircle size={20} />
+          </div>
+          <h1 className="text-base font-bold text-gray-800 leading-none">Link inválido</h1>
+          <p className="text-[13px] text-gray-700 leading-relaxed">{erroLink}</p>
+          <button
+            type="button"
+            onClick={() => setErroLink('')}
+            className="w-full mt-2 bg-green-700 text-white px-4 py-2.5 text-[13px] font-medium hover:bg-green-800 transition-colors cursor-pointer rounded-none"
+          >
+            Ir para o login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (sessao === undefined) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-gray-200 text-gray-600">
         <Loader2 className="animate-spin" size={24} />
       </div>
     );
+  }
+
+  // Convite ou redefinição: a sessão do link já vale, falta escolher a senha
+  if (definindoSenha && sessao) {
+    return <DefinirSenha tipo={definindoSenha} onConcluido={() => setDefinindoSenha(null)} />;
   }
 
   if (!sessao) {
