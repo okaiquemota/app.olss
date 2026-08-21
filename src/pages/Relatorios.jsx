@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import {
   FileText, Zap, PenTool, Calculator,
   Search, Plus, Loader2, TrendingUp, TrendingDown,
-  CheckCircle2, X, MapPin, Key, Lock, Copy
+  CheckCircle2, X, MapPin, Key, Lock, Copy, AlertCircle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { gerarPdfRelatorio } from '../lib/relatorioPdf';
 import { montarHistoricoGrafico } from '../lib/historicoGrafico';
 import { calcularEconomiaAcumuladaAno } from '../lib/economia';
+import { paraNumero } from '../lib/numero';
+import { STATUS_CLIENTE } from '../lib/statusCliente';
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -34,17 +36,19 @@ export function Relatorios() {
   
   const [loadingForm, setLoadingForm] = useState(false);
 
-  const parseNum = (val) => {
-    if (!val) return 0;
-    const normalized = String(val).replace(',', '.');
-    return parseFloat(normalized) || 0;
-  };
+  const [erro, setErro] = useState('');
+  // Marca que algo foi digitado no modal, para avisar antes de fechar e perder
+  const [formAlterado, setFormAlterado] = useState(false);
+  const [confirmandoFechar, setConfirmandoFechar] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     const resClientes = await supabase.from('clientes').select('*').order('nome_razao_social');
     const resRelatorios = await supabase.from('relatorios').select('*').order('created_at', { ascending: false });
 
+    if (resClientes.error || resRelatorios.error) {
+      setErro('Não foi possível carregar a base. Verifique a conexão e recarregue a página.');
+    }
     if (resClientes.data) setClientes(resClientes.data);
     if (resRelatorios.data) setRelatorios(resRelatorios.data);
     setLoading(false);
@@ -54,10 +58,39 @@ export function Relatorios() {
     fetchData();
   }, []);
 
-  const abrirModal = async (cliente, mesLabel, relatorioExistente = null) => {
+  useEffect(() => {
+    if (!erro) return;
+    const t = setTimeout(() => setErro(''), 6000);
+    return () => clearTimeout(t);
+  }, [erro]);
+
+  // Ordem cronológica de um rótulo "Mai/2026": ano*100 + número do mês
+  const ordemDoMes = (label) => {
+    const [mes, ano] = (label || '').split('/');
+    const idx = MESES.indexOf(mes);
+    if (idx === -1 || !ano) return null;
+    return Number(ano) * 100 + idx;
+  };
+
+  // Geração do relatório mais recente ANTERIOR ao mês informado
+  const buscarGeracaoDoMesAnterior = (clienteId, mesLabel) => {
+    const alvo = ordemDoMes(mesLabel);
+    if (alvo === null) return 0;
+
+    const anteriores = relatorios
+      .filter(r => r.cliente_id === clienteId)
+      .map(r => ({ ordem: ordemDoMes(r.mes_referencia), geracao: r.geracao_atual }))
+      .filter(r => r.ordem !== null && r.ordem < alvo)
+      .sort((a, b) => b.ordem - a.ordem);
+
+    return anteriores.length > 0 ? (anteriores[0].geracao || 0) : 0;
+  };
+
+  const abrirModal = (cliente, mesLabel, relatorioExistente = null) => {
     setClienteSelecionado(cliente);
     setMesReferencia(mesLabel);
     setModalAberto(true);
+    setFormAlterado(false);
 
     if (relatorioExistente) {
       setRelatorioEditandoId(relatorioExistente.id);
@@ -74,15 +107,10 @@ export function Relatorios() {
       setParecerTecnico('');
       setStatusRelatorio('Rascunho'); 
 
-      const { data: relAnteriorData } = await supabase
-        .from('relatorios')
-        .select('geracao_atual')
-        .eq('cliente_id', cliente.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      const genAnt = relAnteriorData && relAnteriorData.length > 0 ? (relAnteriorData[0].geracao_atual || 0) : 0;
-      setGeracaoAnterior(genAnt);
+      // Pega a geração do mês imediatamente anterior ao que está sendo criado.
+      // Antes usava o relatório criado por último (created_at), o que trazia o
+      // valor errado quando um mês antigo era preenchido depois de um mais novo.
+      setGeracaoAnterior(buscarGeracaoDoMesAnterior(cliente.id, mesLabel));
 
       if (cliente.ucs && cliente.ucs.length > 0) {
         setUnidades(cliente.ucs.map(uc => ({
@@ -97,6 +125,31 @@ export function Relatorios() {
   const copiarTexto = (texto) => {
     if (texto) navigator.clipboard.writeText(texto);
   };
+
+  // O modal é um formulário longo: só fecha direto se nada foi digitado
+  const pedirParaFechar = () => {
+    if (formAlterado) setConfirmandoFechar(true);
+    else setModalAberto(false);
+  };
+
+  const fecharDescartando = () => {
+    setConfirmandoFechar(false);
+    setFormAlterado(false);
+    setModalAberto(false);
+  };
+
+  // Esc fecha o modal (passando pela confirmação se houver algo digitado)
+  useEffect(() => {
+    if (!modalAberto) return;
+    const aoTeclar = (e) => {
+      if (e.key !== 'Escape') return;
+      if (confirmandoFechar) setConfirmandoFechar(false);
+      else if (formAlterado) setConfirmandoFechar(true);
+      else setModalAberto(false);
+    };
+    window.addEventListener('keydown', aoTeclar);
+    return () => window.removeEventListener('keydown', aoTeclar);
+  }, [modalAberto, confirmandoFechar, formAlterado]);
 
   const hoje = new Date();
   const mesesColunas = Array.from({ length: quantidadeMeses })
@@ -114,29 +167,30 @@ export function Relatorios() {
   const buscarRelatorio = (clienteId, mesLabel) => relatorios.find(r => r.cliente_id === clienteId && r.mes_referencia === mesLabel);
 
   const handleUnidadeChange = (id, campo, valor) => {
+    setFormAlterado(true);
     setUnidades(unidades.map(u => u.id === id ? { ...u, [campo]: valor } : u));
   };
 
-  const geracaoAtualNum = parseNum(geracaoAtual);
-  const geracaoAnteriorNum = parseNum(geracaoAnterior);
+  const geracaoAtualNum = paraNumero(geracaoAtual);
+  const geracaoAnteriorNum = paraNumero(geracaoAnterior);
   const diferencaGeracao = geracaoAtualNum - geracaoAnteriorNum;
 
   const qtdGeradoras = unidades.filter(u => u.tipo === 'Geradora').length || 1;
   const geracaoRateada = geracaoAnteriorNum / qtdGeradoras;
 
   const calcularLinhaUC = (unidade) => {
-    const preco = parseNum(unidade.precoKwh);
-    const tarifa = parseNum(unidade.tarifaConta);
-    const valorComSistema = parseNum(unidade.valorConta);
+    const preco = paraNumero(unidade.precoKwh);
+    const tarifa = paraNumero(unidade.tarifaConta);
+    const valorComSistema = paraNumero(unidade.valorConta);
     let consumoTotalUC; let autoconsumo = 0;
 
     if (unidade.tipo === 'Geradora') {
-      const injetada = parseNum(unidade.energiaInjetada);
-      const consumoDaConta = parseNum(unidade.consumoConta);
+      const injetada = paraNumero(unidade.energiaInjetada);
+      const consumoDaConta = paraNumero(unidade.consumoConta);
       autoconsumo = Math.max(0, geracaoRateada - injetada);
       consumoTotalUC = autoconsumo + consumoDaConta;
     } else {
-      consumoTotalUC = parseNum(unidade.energiaAtiva);
+      consumoTotalUC = paraNumero(unidade.energiaAtiva);
     }
     const valorSemSistema = (consumoTotalUC * preco) + tarifa;
     const economia = valorSemSistema - valorComSistema;
@@ -146,7 +200,10 @@ export function Relatorios() {
   const economiaTotal = unidades.reduce((acc, unidade) => acc + calcularLinhaUC(unidade).economia, 0);
 
   const handleSalvar = async (gerarPdf = true) => {
-    if (!mesReferencia) return alert('Informe o mês de referência.');
+    if (!mesReferencia) {
+      setErro('Informe o mês de referência.');
+      return;
+    }
 
     setLoadingForm(true);
     try {
@@ -201,10 +258,11 @@ export function Relatorios() {
       }
 
       fetchData();
+      setFormAlterado(false);
       setModalAberto(false);
 
     } catch (err) {
-      alert("Erro ao salvar relatório: " + err.message);
+      setErro(`Não foi possível salvar o relatório: ${err.message || 'erro desconhecido'}`);
     } finally {
       setLoadingForm(false);
     }
@@ -213,7 +271,7 @@ export function Relatorios() {
   // ==========================================
   // NOVOS ESTILOS DE DESTAQUE PARA O MODAL
   // ==========================================
-  const inputClass = "w-full bg-slate-50 border border-slate-300 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 focus:bg-white transition-all rounded-none placeholder:text-gray-500";
+  const inputClass = "w-full bg-gray-100 border border-gray-400 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 focus:bg-white transition-all rounded-none placeholder:text-gray-500";
   const labelClass = "block text-[10px] font-bold text-gray-600 mb-1.5 uppercase tracking-wider";
   
   // Cabeçalho dos cards agora usa o Verde Escuro da OLSS para dar muito contraste
@@ -223,13 +281,26 @@ export function Relatorios() {
   const mesAtualLabel = mesesColunas.at(-1)?.label || '';
   const mesSelecionadoResumo = mesResumo || mesAtualLabel;
 
+  // Só clientes com contrato recebem relatório — usar clientes.length aqui fazia
+  // o "A Fazer" contar prospecções e nunca chegar a zero.
+  const clientesComContrato = clientes.filter(c => c.status === STATUS_CLIENTE.COM_CONTRATO);
+  const totalComContrato = clientesComContrato.length;
+
   const relatoriosDoMesSelecionado = relatorios.filter(r => r.mes_referencia === mesSelecionadoResumo);
   const qtdProntos = relatoriosDoMesSelecionado.filter(r => r.faturas_cpfl?.status_relatorio !== 'Rascunho').length;
   const qtdRascunhos = relatoriosDoMesSelecionado.filter(r => r.faturas_cpfl?.status_relatorio === 'Rascunho').length;
-  const qtdAFazer = clientes.length - (qtdProntos + qtdRascunhos);
+  const qtdAFazer = Math.max(0, totalComContrato - (qtdProntos + qtdRascunhos));
 
   return (
     <div className="w-full h-full flex flex-col relative text-sm">
+
+      {/* AVISO DE FALHA */}
+      {erro && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[80] max-w-[90vw] bg-red-600 text-white px-4 py-2.5 rounded-none shadow-sm text-[13px] font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <AlertCircle size={16} className="shrink-0" />
+          {erro}
+        </div>
+      )}
       <div className="flex flex-col h-full bg-white border border-gray-400 shadow-sm animate-in fade-in duration-300 antialiased">
         
         {/* CABEÇALHO DA TELA */}
@@ -265,7 +336,7 @@ export function Relatorios() {
             </select>
           </div>
           <div className="px-4 py-2 text-gray-800 flex items-center justify-center grow">
-            <div><span className="font-extrabold text-[14px]">{clientes.length}</span> <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 ml-1">Clientes</span></div>
+            <div><span className="font-extrabold text-[14px]">{totalComContrato}</span> <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 ml-1">Com contrato</span></div>
           </div>
           <div className="px-4 py-2 text-green-700 flex items-center justify-center grow bg-green-50/40">
             <div><span className="font-extrabold text-[14px]">{qtdProntos}</span> <span className="text-[10px] font-bold uppercase tracking-wider text-green-600 ml-1">Prontos</span></div>
@@ -291,7 +362,7 @@ export function Relatorios() {
                     {mesesColunas.map(mes => (
                       <th key={mes.chave} className={`border-r border-gray-400 px-2 py-3 text-center min-w-[90px] ${mes.atual ? 'bg-green-50/60' : ''}`}>
                         <div className={`text-[12px] font-bold ${mes.atual ? 'text-green-800' : 'text-gray-700'}`}>{mes.curto}</div>
-                        <div className="text-[10px] font-semibold text-gray-600">{mes.qtd}/{clientes.length}</div>
+                        <div className="text-[10px] font-semibold text-gray-600">{mes.qtd}/{totalComContrato}</div>
                       </th>
                     ))}
                   </tr>
@@ -356,7 +427,7 @@ export function Relatorios() {
 
       {/* MODAL DE GERAÇÃO E EDIÇÃO */}
       {modalAberto && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-50 flex items-center justify-center p-4 transition-opacity overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) setModalAberto(false); }}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-50 flex items-center justify-center p-4 transition-opacity overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) pedirParaFechar(); }}>
           <div className="bg-white shadow-2xl border border-gray-400 w-full max-w-5xl overflow-hidden animate-in zoom-in-95 duration-200 rounded-none max-h-[90vh] flex flex-col my-auto">
             
             {/* TOPO DO MODAL (MANTÉM CLARO E LIMPO) */}
@@ -370,38 +441,38 @@ export function Relatorios() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1 rounded-none flex items-center gap-2">
-                  <Calculator size={14} className="text-emerald-600" />
+                <div className="bg-green-50 border border-green-400 text-green-800 px-3 py-1 rounded-none flex items-center gap-2">
+                  <Calculator size={14} className="text-green-700" />
                   <span className="text-[12px] font-extrabold">Econ: R$ {economiaTotal.toFixed(2).replace('.', ',')}</span>
                 </div>
-                <button onClick={() => setModalAberto(false)} className="text-gray-600 hover:text-red-600 hover:bg-red-50 p-1.5 transition-colors cursor-pointer border border-transparent hover:border-red-200 rounded-none">
+                <button onClick={pedirParaFechar} className="text-gray-600 hover:text-red-600 hover:bg-red-50 p-1.5 transition-colors cursor-pointer border border-transparent hover:border-red-200 rounded-none">
                   <X size={16} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
 
             {/* CORPO DO FORMULÁRIO (FUNDO ESCURECIDO PRA DESTACAR OS CARDS) */}
-            <div className="p-5 space-y-5 overflow-y-auto flex-1 bg-slate-100 shadow-inner">
+            <div className="p-5 space-y-5 overflow-y-auto flex-1 bg-gray-200 shadow-inner">
               
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 
                 {/* ETAPA 1 */}
-                <div className="bg-white border border-slate-300 shadow-sm lg:col-span-2">
+                <div className="bg-white border border-gray-400 shadow-sm lg:col-span-2">
                   <div className={cardHeaderClass}>
                     <h3 className={cardTitleClass}><FileText size={14} className="text-emerald-400" /> 1. Dados de Identificação</h3>
                   </div>
                   <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
                       <label className={labelClass}>Cliente / Usina</label>
-                      <input type="text" disabled value={clienteSelecionado?.nome_razao_social || ''} className="w-full bg-slate-200 border border-slate-300 px-3 py-2 text-[12px] text-slate-700 font-bold rounded-none" />
+                      <input type="text" disabled value={clienteSelecionado?.nome_razao_social || ''} className="w-full bg-gray-200 border border-gray-400 px-3 py-2 text-[12px] text-gray-700 font-bold rounded-none" />
                     </div>
                     <div>
                       <label className={labelClass}><MapPin size={11} className="inline"/> Endereço</label>
-                      <input type="text" disabled value={clienteSelecionado?.endereco || 'Não cadastrado'} className="w-full bg-slate-200 border border-slate-300 px-3 py-2 text-[12px] text-slate-700 font-bold rounded-none truncate" />
+                      <input type="text" disabled value={clienteSelecionado?.endereco || 'Não cadastrado'} className="w-full bg-gray-200 border border-gray-400 px-3 py-2 text-[12px] text-gray-700 font-bold rounded-none truncate" />
                     </div>
                     <div>
                       <label className={labelClass}>Mês de Referência</label>
-                      <input type="text" disabled value={mesReferencia} className="w-full bg-slate-200 border border-slate-300 px-3 py-2 text-[12px] text-slate-700 font-bold rounded-none" />
+                      <input type="text" disabled value={mesReferencia} className="w-full bg-gray-200 border border-gray-400 px-3 py-2 text-[12px] text-gray-700 font-bold rounded-none" />
                     </div>
                   </div>
                 </div>
@@ -441,7 +512,7 @@ export function Relatorios() {
               </div>
 
               {/* ETAPA 2 */}
-              <div className="bg-white border border-slate-300 shadow-sm">
+              <div className="bg-white border border-gray-400 shadow-sm">
                 <div className={cardHeaderClass}>
                   <h3 className={cardTitleClass}><Zap size={14} className="text-emerald-400" /> 2. Leitura do Inversor</h3>
                 </div>
@@ -449,20 +520,20 @@ export function Relatorios() {
                   <div>
                     <label className={labelClass}>Geração Atual (kWh)</label>
                     <div className="relative">
-                      <input type="text" value={geracaoAtual} onChange={(e) => setGeracaoAtual(e.target.value)} placeholder="0.00" className={inputClass} />
+                      <input type="text" value={geracaoAtual} onChange={(e) => { setFormAlterado(true); setGeracaoAtual(e.target.value); }} placeholder="0.00" className={inputClass} />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-500">kWh</span>
                     </div>
                   </div>
                   <div>
                     <label className={labelClass}>Geração Mês Anterior (Banco)</label>
                     <div className="relative">
-                      <input type="text" value={geracaoAnterior} disabled readOnly placeholder="0.00" className={`${inputClass} !bg-slate-100 !cursor-not-allowed !text-slate-500`} />
+                      <input type="text" value={geracaoAnterior} disabled readOnly placeholder="0.00" className={`${inputClass} !bg-gray-200 !cursor-not-allowed !text-gray-600`} />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-500">kWh</span>
                     </div>
                   </div>
-                  <div className="bg-slate-50 border border-slate-200 p-3 flex flex-col justify-center rounded-none mt-5">
+                  <div className="bg-gray-100 border border-gray-400 p-3 flex flex-col justify-center rounded-none mt-5">
                     <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Comparativo</span>
-                    <span className={`text-[13px] font-extrabold flex items-center gap-1 mt-0.5 ${diferencaGeracao >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                    <span className={`text-[13px] font-extrabold flex items-center gap-1 mt-0.5 ${diferencaGeracao >= 0 ? 'text-green-700' : 'text-red-600'}`}>
                       {diferencaGeracao >= 0 ? <TrendingUp size={15}/> : <TrendingDown size={15}/>} {Math.abs(diferencaGeracao).toFixed(0)} kWh ({diferencaGeracao >= 0 ? 'Ganho' : 'Perda'})
                     </span>
                   </div>
@@ -471,7 +542,7 @@ export function Relatorios() {
 
               {/* ETAPA 3 */}
               {unidades.length > 0 && (
-                <div className="bg-white border border-slate-300 shadow-sm">
+                <div className="bg-white border border-gray-400 shadow-sm">
                   <div className={cardHeaderClass}>
                     <h3 className={cardTitleClass}><Calculator size={14} className="text-emerald-400" /> 3. Faturas da CPFL</h3>
                   </div>
@@ -481,15 +552,15 @@ export function Relatorios() {
                       const res = calcularLinhaUC(unidade);
                       
                       return (
-                        <div key={unidade.id} className="bg-slate-50 p-4 border border-slate-200 rounded-none relative">
-                          <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
-                            <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border rounded-none ${ehGeradora ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-blue-100 text-blue-800 border-blue-300'}`}>
+                        <div key={unidade.id} className="bg-gray-100 p-4 border border-gray-400 rounded-none relative">
+                          <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-400">
+                            <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border rounded-none ${ehGeradora ? 'bg-emerald-100 text-green-800 border-emerald-300' : 'bg-blue-100 text-blue-800 border-blue-300'}`}>
                               {unidade.tipo} - UC: {unidade.numero_uc}
                             </span>
                             <div className="flex items-center gap-3">
-                              <div className="text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-2 py-1 shadow-sm">Consumo Total: <span className="text-slate-800">{res.consumoTotalUC.toFixed(0)} kWh</span></div>
-                              {ehGeradora && <div className="text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-2 py-1 shadow-sm">Autoconsumo: <span className="text-slate-800">{res.autoconsumo.toFixed(0)} kWh</span></div>}
-                              <div className="text-[11px] font-extrabold bg-white border border-slate-200 px-2 py-1 shadow-sm">Econ: <span className={res.economia >= 0 ? 'text-emerald-700' : 'text-red-600'}>R$ {res.economia.toFixed(2).replace('.', ',')}</span></div>
+                              <div className="text-[10px] font-bold text-gray-600 bg-white border border-gray-400 px-2 py-1 shadow-sm">Consumo Total: <span className="text-slate-800">{res.consumoTotalUC.toFixed(0)} kWh</span></div>
+                              {ehGeradora && <div className="text-[10px] font-bold text-gray-600 bg-white border border-gray-400 px-2 py-1 shadow-sm">Autoconsumo: <span className="text-slate-800">{res.autoconsumo.toFixed(0)} kWh</span></div>}
+                              <div className="text-[11px] font-extrabold bg-white border border-gray-400 px-2 py-1 shadow-sm">Econ: <span className={res.economia >= 0 ? 'text-green-700' : 'text-red-600'}>R$ {res.economia.toFixed(2).replace('.', ',')}</span></div>
                             </div>
                           </div>
 
@@ -500,9 +571,9 @@ export function Relatorios() {
                           </div>
 
                           {ehGeradora ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-emerald-50/50 border border-emerald-200 shadow-inner">
-                              <div><label className="block text-[10px] font-bold text-emerald-800 mb-1.5 uppercase tracking-wider">Energia Injetada (kWh)</label><input type="text" value={unidade.energiaInjetada} onChange={(e) => handleUnidadeChange(unidade.id, 'energiaInjetada', e.target.value)} placeholder="Ex: 1200" className={inputClass} /></div>
-                              <div><label className="block text-[10px] font-bold text-emerald-800 mb-1.5 uppercase tracking-wider">Consumo Conta Geradora (kWh)</label><input type="text" value={unidade.consumoConta} onChange={(e) => handleUnidadeChange(unidade.id, 'consumoConta', e.target.value)} placeholder="Ex: 150" className={inputClass} /></div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-green-50/50 border border-green-400 shadow-inner">
+                              <div><label className="block text-[10px] font-bold text-green-800 mb-1.5 uppercase tracking-wider">Energia Injetada (kWh)</label><input type="text" value={unidade.energiaInjetada} onChange={(e) => handleUnidadeChange(unidade.id, 'energiaInjetada', e.target.value)} placeholder="Ex: 1200" className={inputClass} /></div>
+                              <div><label className="block text-[10px] font-bold text-green-800 mb-1.5 uppercase tracking-wider">Consumo Conta Geradora (kWh)</label><input type="text" value={unidade.consumoConta} onChange={(e) => handleUnidadeChange(unidade.id, 'consumoConta', e.target.value)} placeholder="Ex: 150" className={inputClass} /></div>
                             </div>
                           ) : (
                             <div className="grid grid-cols-1 p-3 bg-blue-50/30 border border-blue-200 shadow-inner">
@@ -517,18 +588,18 @@ export function Relatorios() {
               )}
 
               {/* ETAPA 4 */}
-              <div className="bg-white border border-slate-300 shadow-sm">
+              <div className="bg-white border border-gray-400 shadow-sm">
                 <div className={cardHeaderClass}>
                   <h3 className={cardTitleClass}><PenTool size={14} className="text-emerald-400" /> 4. Resolução Final</h3>
                 </div>
                 <div className="p-4 space-y-4">
                   <div>
                     <label className={labelClass}>Parecer Técnico (Vai pro PDF)</label>
-                    <textarea rows="3" value={parecerTecnico} onChange={(e) => setParecerTecnico(e.target.value)} placeholder="Ex: Faltou x kWh para pagar taxa mínima..." className="w-full bg-slate-50 border border-slate-300 p-3 text-[12px] focus:ring-1 focus:ring-emerald-600 focus:bg-white outline-none resize-none rounded-none font-medium text-gray-800"></textarea>
+                    <textarea rows="3" value={parecerTecnico} onChange={(e) => { setFormAlterado(true); setParecerTecnico(e.target.value); }} placeholder="Ex: Faltou x kWh para pagar taxa mínima..." className="w-full bg-gray-100 border border-gray-400 p-3 text-[12px] focus:ring-1 focus:ring-green-500 focus:bg-white outline-none resize-none rounded-none font-medium text-gray-800"></textarea>
                   </div>
                   <div className="w-full md:w-1/3">
                     <label className={labelClass}>Status do Relatório</label>
-                    <select value={statusRelatorio} onChange={(e) => setStatusRelatorio(e.target.value)} className="w-full bg-slate-50 border border-slate-300 px-3 py-2 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-emerald-600 focus:bg-white font-bold rounded-none cursor-pointer">
+                    <select value={statusRelatorio} onChange={(e) => { setFormAlterado(true); setStatusRelatorio(e.target.value); }} className="w-full bg-gray-100 border border-gray-400 px-3 py-2 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-green-500 focus:bg-white font-bold rounded-none cursor-pointer">
                       <option value="Rascunho">Rascunho</option>
                       <option value="Pronto para Envio">Pronto para Envio</option>
                       <option value="Enviado">Enviado</option>
@@ -541,7 +612,7 @@ export function Relatorios() {
 
             {/* RODAPÉ: CANCELAR | SALVAR RASCUNHO | GERAR PDF */}
             <div className="p-4 border-t border-gray-400 bg-white flex justify-end gap-3 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10">
-              <button onClick={() => setModalAberto(false)} className="px-5 py-2.5 bg-white border border-gray-400 text-gray-700 text-[12px] font-bold hover:bg-gray-200 rounded-none cursor-pointer transition-colors">
+              <button onClick={pedirParaFechar} className="px-5 py-2.5 bg-white border border-gray-400 text-gray-700 text-[12px] font-bold hover:bg-gray-200 rounded-none cursor-pointer transition-colors">
                 Cancelar
               </button>
               
@@ -564,6 +635,57 @@ export function Relatorios() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMAÇÃO DE DESCARTE — o modal é um formulário longo */}
+      {confirmandoFechar && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-[70] flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setConfirmandoFechar(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-descartar-relatorio"
+            className="bg-white shadow-2xl border border-gray-400 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 rounded-none"
+          >
+            <div className="flex justify-between items-center p-4 border-b border-gray-400 bg-gray-100">
+              <h3 id="titulo-descartar-relatorio" className="font-bold text-[13px] uppercase tracking-wider text-gray-800">Descartar Preenchimento</h3>
+              <button
+                type="button"
+                onClick={() => setConfirmandoFechar(false)}
+                className="text-gray-600 hover:text-red-600 hover:bg-red-50 p-1.5 transition-colors cursor-pointer border border-transparent hover:border-red-200 rounded-none"
+                title="Fechar"
+              >
+                <X size={16} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            <div className="p-5">
+              <p className="text-[13px] text-gray-700 leading-relaxed">
+                Você preencheu dados neste relatório e ainda não salvou. Fechar agora descarta tudo.
+              </p>
+
+              <div className="flex gap-2 mt-5">
+                <button
+                  type="button"
+                  autoFocus
+                  onClick={() => setConfirmandoFechar(false)}
+                  className="flex-1 bg-white border border-gray-400 text-gray-700 px-4 py-2.5 text-[12px] font-bold hover:bg-gray-200 transition-colors cursor-pointer rounded-none"
+                >
+                  Continuar editando
+                </button>
+                <button
+                  type="button"
+                  onClick={fecharDescartando}
+                  className="flex-1 bg-red-600 text-white px-4 py-2.5 text-[12px] font-bold hover:bg-red-700 transition-colors cursor-pointer rounded-none"
+                >
+                  Descartar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

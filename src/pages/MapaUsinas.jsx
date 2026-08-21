@@ -42,12 +42,18 @@ export function MapaUsinas() {
   
   const [usinas, setUsinas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState('');
 
   useEffect(() => {
     const carregarUsinas = async () => {
-      const { data, error } = await supabase.from('clientes').select('*');
-      
+      // Só as colunas que o mapa usa: com select('*') as senhas dos portais
+      // vinham para esta tela sem necessidade nenhuma.
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('id, nome_razao_social, lat, lng, status, status_monitoramento, endereco, observacoes_internas');
+
       if (error || !data) {
+        setErro('Não foi possível carregar as usinas. Verifique a conexão e recarregue a página.');
         setLoading(false);
         return;
       }
@@ -102,6 +108,14 @@ export function MapaUsinas() {
 
   return (
     <div className="-m-3 md:-m-4 h-[calc(100vh-48px)] relative z-0 overflow-hidden animate-in fade-in duration-300 bg-gray-200 border border-gray-400">
+
+      {/* AVISO DE FALHA */}
+      {erro && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1100] max-w-[90vw] bg-red-600 text-white px-4 py-2.5 rounded-none shadow-sm text-[13px] font-semibold flex items-center gap-2">
+          <AlertCircle size={16} className="shrink-0" />
+          {erro}
+        </div>
+      )}
       
       {/* BARRA DE BUSCA */}
       <div className="absolute top-3 left-3 md:top-4 md:left-4 z-[1000] w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 pr-3 sm:pr-0">
