@@ -213,8 +213,8 @@ export function Relatorios() {
   // ==========================================
   // NOVOS ESTILOS DE DESTAQUE PARA O MODAL
   // ==========================================
-  const inputClass = "w-full bg-slate-50 border border-slate-300 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 focus:bg-white transition-all rounded-none placeholder:text-gray-400";
-  const labelClass = "block text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider";
+  const inputClass = "w-full bg-slate-50 border border-slate-300 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 focus:bg-white transition-all rounded-none placeholder:text-gray-500";
+  const labelClass = "block text-[10px] font-bold text-gray-600 mb-1.5 uppercase tracking-wider";
   
   // Cabeçalho dos cards agora usa o Verde Escuro da OLSS para dar muito contraste
   const cardHeaderClass = "px-4 py-2.5 border-b border-emerald-950 bg-[#064E3B] flex items-center justify-between";
@@ -230,19 +230,19 @@ export function Relatorios() {
 
   return (
     <div className="w-full h-full flex flex-col relative text-sm">
-      <div className="flex flex-col h-full bg-white border border-gray-300 animate-in fade-in duration-300 antialiased">
+      <div className="flex flex-col h-full bg-white border border-gray-400 shadow-sm animate-in fade-in duration-300 antialiased">
         
         {/* CABEÇALHO DA TELA */}
-        <div className="flex flex-col lg:flex-row items-center gap-2 p-3 md:p-4 border-b border-gray-300 shrink-0 w-full bg-white">
+        <div className="flex flex-col lg:flex-row items-center gap-2 p-3 md:p-4 border-b border-gray-400 shrink-0 w-full bg-white">
           <div className="relative flex-1 w-full lg:w-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
             <input 
               type="text" placeholder="Pesquisar usina/cliente na grade..." value={busca} onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-none text-[13px] font-medium text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-all placeholder:text-gray-400"
+              className="w-full pl-9 pr-4 py-2 bg-white border border-gray-400 rounded-none text-[13px] font-medium text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-all placeholder:text-gray-500"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto shrink-0 justify-end">
-            <select value={quantidadeMeses} onChange={(e) => setQuantidadeMeses(Number(e.target.value))} className="bg-white border border-gray-300 px-3 py-2 text-[12px] text-gray-700 outline-none focus:ring-1 focus:ring-green-500 font-medium rounded-none cursor-pointer">
+            <select value={quantidadeMeses} onChange={(e) => setQuantidadeMeses(Number(e.target.value))} className="bg-white border border-gray-400 px-3 py-2 text-[12px] text-gray-700 outline-none focus:ring-1 focus:ring-green-500 font-medium rounded-none cursor-pointer">
               <option value={3}>3 meses</option>
               <option value={6}>6 meses</option>
               <option value={12}>12 meses</option>
@@ -251,13 +251,13 @@ export function Relatorios() {
         </div>
 
         {/* BARRA DE RESUMO INTELIGENTE */}
-        <div className="flex flex-wrap border-b border-gray-300 bg-white shrink-0 text-[12px] divide-x divide-gray-300">
-          <div className="px-4 py-2 flex items-center gap-2 bg-gray-50">
-            <span className="font-bold text-gray-500 uppercase tracking-wider text-[10px]">Mês Ref:</span>
+        <div className="flex flex-wrap border-b border-gray-400 bg-white shrink-0 text-[12px] divide-x divide-gray-300">
+          <div className="px-4 py-2 flex items-center gap-2 bg-gray-100">
+            <span className="font-bold text-gray-600 uppercase tracking-wider text-[10px]">Mês Ref:</span>
             <select
               value={mesSelecionadoResumo}
               onChange={(e) => setMesResumo(e.target.value)}
-              className="bg-white border border-gray-300 px-3 py-1.5 text-[12px] font-bold text-gray-800 outline-none focus:ring-1 focus:ring-green-500 rounded-none cursor-pointer"
+              className="bg-white border border-gray-400 px-3 py-1.5 text-[12px] font-bold text-gray-800 outline-none focus:ring-1 focus:ring-green-500 rounded-none cursor-pointer"
             >
               {[...mesesColunas].reverse().map(m => (
                 <option key={m.chave} value={m.label}>{m.label}</option>
@@ -265,7 +265,7 @@ export function Relatorios() {
             </select>
           </div>
           <div className="px-4 py-2 text-gray-800 flex items-center justify-center grow">
-            <div><span className="font-extrabold text-[14px]">{clientes.length}</span> <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 ml-1">Clientes</span></div>
+            <div><span className="font-extrabold text-[14px]">{clientes.length}</span> <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 ml-1">Clientes</span></div>
           </div>
           <div className="px-4 py-2 text-green-700 flex items-center justify-center grow bg-green-50/40">
             <div><span className="font-extrabold text-[14px]">{qtdProntos}</span> <span className="text-[10px] font-bold uppercase tracking-wider text-green-600 ml-1">Prontos</span></div>
@@ -273,35 +273,35 @@ export function Relatorios() {
           <div className="px-4 py-2 text-amber-600 flex items-center justify-center grow bg-amber-50/40">
             <div><span className="font-extrabold text-[14px]">{qtdRascunhos}</span> <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 ml-1">Rascunhos</span></div>
           </div>
-          <div className="px-4 py-2 text-gray-500 flex items-center justify-center grow bg-gray-50/60">
-            <div><span className="font-extrabold text-[14px]">{qtdAFazer}</span> <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 ml-1">A Fazer</span></div>
+          <div className="px-4 py-2 text-gray-600 flex items-center justify-center grow bg-gray-100/60">
+            <div><span className="font-extrabold text-[14px]">{qtdAFazer}</span> <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 ml-1">A Fazer</span></div>
           </div>
         </div>
 
         {/* TABELA DE HISTÓRICO */}
         <div className="flex-1 bg-white overflow-hidden flex flex-col">
           {loading ? (
-            <div className="flex justify-center items-center flex-1 text-gray-400 text-[13px]"><Loader2 className="animate-spin mr-2" size={18} /> Carregando base...</div>
+            <div className="flex justify-center items-center flex-1 text-gray-500 text-[13px]"><Loader2 className="animate-spin mr-2" size={18} /> Carregando base...</div>
           ) : (
             <div className="flex-1 overflow-auto">
               <table className="border-collapse min-w-[900px] w-full text-left whitespace-nowrap">
-                <thead className="bg-gray-100 sticky top-0 z-30 border-b border-gray-300">
-                  <tr className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">
-                    <th className="sticky left-0 z-40 bg-gray-100 border-r border-gray-300 px-4 py-3 min-w-[285px]">Cliente / Usina</th>
+                <thead className="bg-gray-200 sticky top-0 z-30 border-b border-gray-400">
+                  <tr className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+                    <th className="sticky left-0 z-40 bg-gray-200 border-r border-gray-400 px-4 py-3 min-w-[285px]">Cliente / Usina</th>
                     {mesesColunas.map(mes => (
-                      <th key={mes.chave} className={`border-r border-gray-300 px-2 py-3 text-center min-w-[90px] ${mes.atual ? 'bg-green-50/60' : ''}`}>
+                      <th key={mes.chave} className={`border-r border-gray-400 px-2 py-3 text-center min-w-[90px] ${mes.atual ? 'bg-green-50/60' : ''}`}>
                         <div className={`text-[12px] font-bold ${mes.atual ? 'text-green-800' : 'text-gray-700'}`}>{mes.curto}</div>
-                        <div className="text-[10px] font-semibold text-gray-500">{mes.qtd}/{clientes.length}</div>
+                        <div className="text-[10px] font-semibold text-gray-600">{mes.qtd}/{clientes.length}</div>
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {clientesFiltrados.map(cliente => (
-                    <tr key={cliente.id} className="hover:bg-gray-50 transition-colors group">
-                      <td className="sticky left-0 z-20 bg-white border-r border-gray-200 px-4 py-2">
+                    <tr key={cliente.id} className="hover:bg-gray-100 transition-colors group">
+                      <td className="sticky left-0 z-20 bg-white border-r border-gray-300 px-4 py-2">
                         <div className="font-semibold text-[12px] text-gray-800 truncate max-w-[270px]">{cliente.nome_razao_social}</div>
-                        <span className="text-[11px] text-gray-500">{cliente.plataforma_inversor || '--'}</span>
+                        <span className="text-[11px] text-gray-600">{cliente.plataforma_inversor || '--'}</span>
                       </td>
                       
                       {mesesColunas.map(mes => {
@@ -312,9 +312,9 @@ export function Relatorios() {
                           <td 
                             key={mes.chave} 
                             onClick={() => abrirModal(cliente, mes.label, rel)}
-                            className={`px-2 py-1.5 text-center border-r border-gray-200 cursor-pointer transition-colors ${
+                            className={`px-2 py-1.5 text-center border-r border-gray-300 cursor-pointer transition-colors ${
                               rel ? (isRascunho ? 'bg-amber-50 hover:bg-amber-100' : 'bg-green-50/30 hover:bg-green-100/60') 
-                              : (mes.atual ? 'bg-gray-50 hover:bg-gray-100' : 'hover:bg-gray-100')
+                              : (mes.atual ? 'bg-gray-100 hover:bg-gray-200' : 'hover:bg-gray-200')
                             }`}
                           >
                             {rel ? (
@@ -331,8 +331,8 @@ export function Relatorios() {
                               )
                             ) : (
                               <div className="flex flex-col items-center justify-center gap-0.5 opacity-40 hover:opacity-100 transition-opacity">
-                                <Plus size={15} strokeWidth={2.5} className="text-gray-500" />
-                                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Criar</span>
+                                <Plus size={15} strokeWidth={2.5} className="text-gray-600" />
+                                <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Criar</span>
                               </div>
                             )}
                           </td>
@@ -347,10 +347,10 @@ export function Relatorios() {
         </div>
 
         {/* LEGENDA */}
-        <div className="flex items-center gap-6 px-4 py-2 border-t border-gray-300 bg-white shrink-0 text-[11px] text-gray-600 font-medium">
+        <div className="flex items-center gap-6 px-4 py-2 border-t border-gray-400 bg-white shrink-0 text-[11px] text-gray-700 font-medium">
           <div className="flex items-center gap-1.5"><CheckCircle2 size={13} className="text-green-700" /> Gerado</div>
           <div className="flex items-center gap-1.5"><PenTool size={13} className="text-amber-500" /> Rascunho (Salvo)</div>
-          <div className="flex items-center gap-1.5"><Plus size={14} className="text-gray-400" /> Vazio</div>
+          <div className="flex items-center gap-1.5"><Plus size={14} className="text-gray-500" /> Vazio</div>
         </div>
       </div>
 
@@ -360,13 +360,13 @@ export function Relatorios() {
           <div className="bg-white shadow-2xl border border-gray-400 w-full max-w-5xl overflow-hidden animate-in zoom-in-95 duration-200 rounded-none max-h-[90vh] flex flex-col my-auto">
             
             {/* TOPO DO MODAL (MANTÉM CLARO E LIMPO) */}
-            <div className="flex justify-between items-center p-4 border-b border-gray-300 bg-white shrink-0 z-10">
+            <div className="flex justify-between items-center p-4 border-b border-gray-400 bg-white shrink-0 z-10">
               <div className="flex items-center gap-3">
                 <div>
                   <h3 className="font-bold text-[14px] text-gray-800 uppercase tracking-wider">
                     {relatorioEditandoId ? 'Editando Relatório' : 'Novo Relatório de Geração'}
                   </h3>
-                  <p className="text-gray-500 text-[11px] font-bold mt-0.5">{clienteSelecionado?.nome_razao_social}</p>
+                  <p className="text-gray-600 text-[11px] font-bold mt-0.5">{clienteSelecionado?.nome_razao_social}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -374,7 +374,7 @@ export function Relatorios() {
                   <Calculator size={14} className="text-emerald-600" />
                   <span className="text-[12px] font-extrabold">Econ: R$ {economiaTotal.toFixed(2).replace('.', ',')}</span>
                 </div>
-                <button onClick={() => setModalAberto(false)} className="text-gray-500 hover:text-red-600 hover:bg-red-50 p-1.5 transition-colors cursor-pointer border border-transparent hover:border-red-200 rounded-none">
+                <button onClick={() => setModalAberto(false)} className="text-gray-600 hover:text-red-600 hover:bg-red-50 p-1.5 transition-colors cursor-pointer border border-transparent hover:border-red-200 rounded-none">
                   <X size={16} strokeWidth={2.5} />
                 </button>
               </div>
@@ -450,18 +450,18 @@ export function Relatorios() {
                     <label className={labelClass}>Geração Atual (kWh)</label>
                     <div className="relative">
                       <input type="text" value={geracaoAtual} onChange={(e) => setGeracaoAtual(e.target.value)} placeholder="0.00" className={inputClass} />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">kWh</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-500">kWh</span>
                     </div>
                   </div>
                   <div>
                     <label className={labelClass}>Geração Mês Anterior (Banco)</label>
                     <div className="relative">
                       <input type="text" value={geracaoAnterior} disabled readOnly placeholder="0.00" className={`${inputClass} !bg-slate-100 !cursor-not-allowed !text-slate-500`} />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">kWh</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-500">kWh</span>
                     </div>
                   </div>
                   <div className="bg-slate-50 border border-slate-200 p-3 flex flex-col justify-center rounded-none mt-5">
-                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Comparativo</span>
+                    <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Comparativo</span>
                     <span className={`text-[13px] font-extrabold flex items-center gap-1 mt-0.5 ${diferencaGeracao >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
                       {diferencaGeracao >= 0 ? <TrendingUp size={15}/> : <TrendingDown size={15}/>} {Math.abs(diferencaGeracao).toFixed(0)} kWh ({diferencaGeracao >= 0 ? 'Ganho' : 'Perda'})
                     </span>
@@ -540,8 +540,8 @@ export function Relatorios() {
             </div>
 
             {/* RODAPÉ: CANCELAR | SALVAR RASCUNHO | GERAR PDF */}
-            <div className="p-4 border-t border-gray-300 bg-white flex justify-end gap-3 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10">
-              <button onClick={() => setModalAberto(false)} className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 text-[12px] font-bold hover:bg-gray-100 rounded-none cursor-pointer transition-colors">
+            <div className="p-4 border-t border-gray-400 bg-white flex justify-end gap-3 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10">
+              <button onClick={() => setModalAberto(false)} className="px-5 py-2.5 bg-white border border-gray-400 text-gray-700 text-[12px] font-bold hover:bg-gray-200 rounded-none cursor-pointer transition-colors">
                 Cancelar
               </button>
               
