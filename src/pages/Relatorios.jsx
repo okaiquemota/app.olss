@@ -227,12 +227,33 @@ export function Relatorios() {
         }
       };
 
-      if (relatorioEditandoId) {
-        const { error } = await supabase.from('relatorios').update(payload).eq('id', relatorioEditandoId);
+      // Confere no banco se já existe relatório deste cliente/mês antes de criar
+      // outro. Sem isso, salvar de novo com a grade ainda desatualizada gerava uma
+      // linha nova a cada salvamento, e o mesmo mês acumulava várias versões.
+      let idParaAtualizar = relatorioEditandoId;
+
+      if (!idParaAtualizar) {
+        const { data: existentes, error: erroBusca } = await supabase
+          .from('relatorios')
+          .select('id')
+          .eq('cliente_id', clienteSelecionado.id)
+          .eq('mes_referencia', mesReferencia)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (erroBusca) throw erroBusca;
+        if (existentes && existentes.length > 0) idParaAtualizar = existentes[0].id;
+      }
+
+      if (idParaAtualizar) {
+        const { error } = await supabase.from('relatorios').update(payload).eq('id', idParaAtualizar);
         if (error) throw error;
+        setRelatorioEditandoId(idParaAtualizar);
       } else {
-        const { error } = await supabase.from('relatorios').insert([payload]);
+        const { data: criado, error } = await supabase.from('relatorios').insert([payload]).select('id');
         if (error) throw error;
+        // Guarda o id recém-criado: um segundo salvamento na mesma sessão atualiza
+        if (criado && criado.length > 0) setRelatorioEditandoId(criado[0].id);
       }
 
       if (gerarPdf) {
@@ -262,7 +283,9 @@ export function Relatorios() {
         });
       }
 
-      fetchData();
+      // Espera a grade recarregar antes de fechar: fechando antes, a célula recém
+      // salva ainda aparecia como "Criar" e um novo clique gerava outro relatório
+      await fetchData();
       setFormAlterado(false);
       setModalAberto(false);
 
