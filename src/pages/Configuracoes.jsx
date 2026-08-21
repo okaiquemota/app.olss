@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, ExternalLink, Loader2, LayoutGrid } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { linkSeguro } from '../lib/links';
 
 export function Configuracoes() {
   const [plataformas, setPlataformas] = useState([]);
@@ -84,8 +85,8 @@ export function Configuracoes() {
                 <div key={plat.id} className="flex justify-between items-center px-3 py-2.5 hover:bg-gray-100">
                   <div className="flex items-center gap-2">
                     <span className="text-[12px] font-medium text-gray-800">{plat.nome}</span>
-                    {plat.link && (
-                      <a href={plat.link} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 transition-colors" title={plat.link}>
+                    {linkSeguro(plat.link) && (
+                      <a href={linkSeguro(plat.link)} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 transition-colors" title={plat.link}>
                         <ExternalLink size={12} />
                       </a>
                     )}

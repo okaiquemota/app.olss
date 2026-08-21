@@ -16,7 +16,9 @@ export function Pendencias() {
   // Estados de Drag and Drop
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
-  const [ordemFalhou, setOrdemFalhou] = useState(false);
+
+  // Mensagem de falha exibida no rodapé (some sozinha depois de alguns segundos)
+  const [erro, setErro] = useState('');
 
   // Estados dos Modais
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,6 +49,9 @@ export function Pendencias() {
     const resLembretes = await supabase.from('lembretes').select('*').order('concluido', { ascending: true }).order('prioridade', { ascending: false }).order('ordem', { ascending: true }).order('created_at', { ascending: false });
     const resCategorias = await supabase.from('categorias').select('*').order('nome');
 
+    if (resLembretes.error || resCategorias.error) {
+      setErro('Não foi possível carregar as anotações. Verifique a conexão e recarregue a página.');
+    }
     if (!resLembretes.error) setLembretes(resLembretes.data || []);
     if (!resCategorias.error) setCategorias(resCategorias.data || []);
     setLoading(false);
@@ -55,10 +60,10 @@ export function Pendencias() {
   useEffect(() => { fetchData(); }, []);
 
   useEffect(() => {
-    if (!ordemFalhou) return;
-    const t = setTimeout(() => setOrdemFalhou(false), 4000);
+    if (!erro) return;
+    const t = setTimeout(() => setErro(''), 5000);
     return () => clearTimeout(t);
-  }, [ordemFalhou]);
+  }, [erro]);
 
   const mudarFiltroTipo = (tipo) => {
     setFiltroTipo(tipo);
@@ -122,7 +127,7 @@ export function Pendencias() {
       );
       if (resultados.some(r => r.error)) throw new Error('Falha');
     } catch {
-      setOrdemFalhou(true);
+      setErro('A nova ordem pode não ter sido salva. Recarregue a página.');
     }
   };
 
@@ -137,13 +142,21 @@ export function Pendencias() {
   const handleSalvarCategoria = async (e) => {
     e.preventDefault();
     if (!novaCategoria.trim()) return;
-    await supabase.from('categorias').insert([{ nome: novaCategoria, tipo: tipoCategoriaModal }]);
+    const { error } = await supabase.from('categorias').insert([{ nome: novaCategoria, tipo: tipoCategoriaModal }]);
+    if (error) {
+      setErro('Não foi possível criar a categoria. Tente novamente.');
+      return;
+    }
     setNovaCategoria('');
     fetchData();
   };
 
   const deletarCategoria = async (id) => {
-    await supabase.from('categorias').delete().eq('id', id);
+    const { error } = await supabase.from('categorias').delete().eq('id', id);
+    if (error) {
+      setErro('Não foi possível excluir a categoria. Tente novamente.');
+      return;
+    }
     fetchData();
   };
 
@@ -179,23 +192,33 @@ export function Pendencias() {
 
     const payload = { tarefa, tipo: tipoAtivo, categoria: categoriaSelecionada, prioridade, cor: corSelecionada };
 
-    if (editandoId) {
-      await supabase.from('lembretes').update(payload).eq('id', editandoId);
-    } else {
-      const maxOrdem = lembretes.filter(l => l.tipo === tipoAtivo).length;
-      await supabase.from('lembretes').insert([{ ...payload, concluido: false, ordem: maxOrdem }]);
+    const { error } = editandoId
+      ? await supabase.from('lembretes').update(payload).eq('id', editandoId)
+      : await supabase.from('lembretes').insert([{ ...payload, concluido: false, ordem: lembretes.filter(l => l.tipo === tipoAtivo).length }]);
+
+    if (error) {
+      setErro('Não foi possível salvar a anotação. Tente novamente.');
+      return;
     }
     setIsModalOpen(false);
     fetchData();
   };
 
   const toggleConcluido = async (id, statusAtual) => {
-    await supabase.from('lembretes').update({ concluido: !statusAtual }).eq('id', id);
+    const { error } = await supabase.from('lembretes').update({ concluido: !statusAtual }).eq('id', id);
+    if (error) {
+      setErro('Não foi possível atualizar a anotação. Tente novamente.');
+      return;
+    }
     fetchData();
   };
 
   const deletarLembrete = async (id) => {
-    await supabase.from('lembretes').delete().eq('id', id);
+    const { error } = await supabase.from('lembretes').delete().eq('id', id);
+    if (error) {
+      setErro('Não foi possível excluir a anotação. Tente novamente.');
+      return;
+    }
     fetchData();
   };
 
@@ -388,11 +411,11 @@ export function Pendencias() {
         )}
       </div>
 
-      {/* AVISO DE FALHA AO SALVAR A ORDEM */}
-      {ordemFalhou && (
+      {/* AVISO DE FALHA (salvar, excluir, carregar ou reordenar) */}
+      {erro && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-red-600 text-white px-4 py-2.5 rounded-none shadow-sm text-[13px] font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
           <AlertCircle size={16} />
-          A nova ordem pode não ter sido salva. Recarregue a página.
+          {erro}
         </div>
       )}
 
