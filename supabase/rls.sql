@@ -8,6 +8,19 @@
 -- (sem hierarquia admin/técnico), a policy é simples — qualquer
 -- usuário autenticado (logado) tem acesso total à tabela. Usuário
 -- anônimo (não logado) não enxerga nada.
+--
+-- Sobre o aviso "RLS Policy Always True" no Security Advisor: ele é
+-- esperado aqui e não indica falha. O linter marca todo `using (true)`
+-- porque costuma ser engano quando a policy vai para o papel `anon` ou
+-- `public`. Nestas policies o `to authenticated` é a parte que protege:
+-- o acesso irrestrito vale só para quem está logado, e o papel `anon`
+-- fica sem policy nenhuma — ou seja, sem acesso a linha alguma.
+--
+-- Para conferir a qual papel cada policy foi concedida:
+--   select tablename, policyname, roles, cmd
+--   from pg_policies where schemaname = 'public';
+-- A coluna `roles` deve mostrar {authenticated}. Se aparecer {public},
+-- a policy está exposta ao anônimo — rode este arquivo de novo.
 -- ============================================================
 
 alter table public.clientes enable row level security;
