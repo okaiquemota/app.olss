@@ -6,6 +6,13 @@ import {
   CheckCircle2, AlertCircle, FileX, Filter
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { STATUS_CLIENTE, STATUS_CLIENTE_LISTA, STATUS_CLIENTE_PADRAO } from '../lib/statusCliente';
+
+// Id local só para identificar a linha de UC na tela (chave do React e alvo de
+// edição/remoção). Date.now() gerava chave duplicada em dois cliques no mesmo
+// milissegundo, o que fazia o React remover/editar a linha errada.
+let proximoIdUC = 0;
+const novaUC = (tipo) => ({ id: `uc-${++proximoIdUC}`, tipo, numero_uc: '' });
 
 export function Clientes() {
   const [view, setView] = useState('lista'); 
@@ -19,16 +26,21 @@ export function Clientes() {
 
   const [loadingForm, setLoadingForm] = useState(false);
   const [clienteEditando, setClienteEditando] = useState(null);
+
+  // Mensagem de falha exibida no rodapé (some sozinha depois de alguns segundos)
+  const [erro, setErro] = useState('');
+
+  // Endereço como estava ao abrir o formulário — evita repetir a geocodificação
+  // (API pública, limitada a 1 req/s) quando o endereço não foi alterado.
+  const [enderecoOriginal, setEnderecoOriginal] = useState('');
   
   const [formData, setFormData] = useState({
-    nome_razao_social: '', documento: '', contato: '', email: '', status: 'Em prospecção',
+    nome_razao_social: '', documento: '', contato: '', email: '', status: STATUS_CLIENTE_PADRAO,
     endereco: '', login_cpfl: '', senha_cpfl: '', plataforma_inversor: '', 
     login_app: '', senha_app: '', observacoes_internas: ''
   });
   
-  const [ucs, setUcs] = useState([
-    { id: Date.now(), tipo: 'Geradora', numero_uc: '' }
-  ]);
+  const [ucs, setUcs] = useState(() => [novaUC('Geradora')]);
 
   // ==========================================
   // NOVOS ESTADOS: GESTÃO DE CONTRATO
@@ -79,29 +91,40 @@ export function Clientes() {
   const fetchClientes = async () => {
     setLoadingLista(true);
     const { data, error } = await supabase.from('clientes').select('*').order('nome_razao_social');
-    if (error) console.error('Erro ao buscar:', error);
-    else setClientesLista(data || []);
+    if (error) {
+      console.error('Erro ao buscar:', error);
+      setErro('Não foi possível carregar os clientes. Verifique a conexão e recarregue a página.');
+    } else {
+      setClientesLista(data || []);
+    }
     setLoadingLista(false);
   };
 
   useEffect(() => {
     fetchClientes();
-  }, []); 
+  }, []);
+
+  useEffect(() => {
+    if (!erro) return;
+    const t = setTimeout(() => setErro(''), 6000);
+    return () => clearTimeout(t);
+  }, [erro]);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
   const handleUCChange = (id, campo, valor) => setUcs(ucs.map(uc => uc.id === id ? { ...uc, [campo]: valor } : uc));
-  const adicionarUC = () => setUcs([...ucs, { id: Date.now(), tipo: 'Beneficiada', numero_uc: '' }]);
+  const adicionarUC = () => setUcs([...ucs, novaUC('Beneficiada')]);
   const removerUC = (id) => setUcs(ucs.filter(uc => uc.id !== id));
 
   const prepararNovoCliente = () => {
     setClienteEditando(null);
     setFormData({
-      nome_razao_social: '', documento: '', contato: '', email: '', status: 'Em prospecção',
+      nome_razao_social: '', documento: '', contato: '', email: '', status: STATUS_CLIENTE_PADRAO,
       endereco: '', login_cpfl: '', senha_cpfl: '', plataforma_inversor: '', 
       login_app: '', senha_app: '', observacoes_internas: ''
     });
-    setUcs([{ id: Date.now(), tipo: 'Geradora', numero_uc: '' }]);
-    
+    setUcs([novaUC('Geradora')]);
+    setEnderecoOriginal('');
+
     // Reseta Contrato
     setDataInicioContrato('');
     setDuracaoMeses('12');
@@ -118,7 +141,7 @@ export function Clientes() {
       documento: cliente.documento || '',
       contato: cliente.contato || '',
       email: cliente.email || '',
-      status: cliente.status || 'Em prospecção',
+      status: cliente.status || STATUS_CLIENTE_PADRAO,
       endereco: cliente.endereco || '',
       login_cpfl: cliente.login_cpfl || '',
       senha_cpfl: cliente.senha_cpfl || '',
@@ -127,11 +150,12 @@ export function Clientes() {
       senha_app: cliente.senha_app || '',
       observacoes_internas: cliente.observacoes_internas || ''
     });
-    
+    setEnderecoOriginal(cliente.endereco || '');
+
     if (cliente.ucs && cliente.ucs.length > 0) {
       setUcs(cliente.ucs);
     } else {
-      setUcs([{ id: Date.now(), tipo: 'Geradora', numero_uc: '' }]);
+      setUcs([novaUC('Geradora')]);
     }
 
     // Carrega dados de contrato
@@ -145,7 +169,7 @@ export function Clientes() {
 
   const handleSalvar = async () => {
     if (!formData.nome_razao_social) {
-      alert('O Nome/Razão Social é obrigatório!');
+      setErro('O Nome/Razão Social é obrigatório.');
       return;
     }
 
@@ -159,16 +183,24 @@ export function Clientes() {
         ucs: ucs
       };
 
-      if (formData.endereco && formData.endereco.trim() !== '') {
+      const endereco = formData.endereco?.trim() || '';
+      const enderecoMudou = endereco !== (enderecoOriginal?.trim() || '');
+
+      if (!endereco) {
+        payload.lat = null;
+        payload.lng = null;
+      } else if (enderecoMudou) {
+        // Só consulta o Nominatim quando o endereço é novo ou foi alterado.
+        // Sem mudança, lat/lng ficam fora do payload e o banco mantém o valor atual.
         try {
-          let query = formData.endereco;
+          let query = endereco;
           if (!query.toLowerCase().includes('brasil')) query += ', Brasil';
 
           const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
             headers: { 'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7' }
           });
           const geoData = await res.json();
-          
+
           if (geoData && geoData.length > 0) {
             payload.lat = parseFloat(geoData[0].lat);
             payload.lng = parseFloat(geoData[0].lon);
@@ -179,9 +211,6 @@ export function Clientes() {
         } catch (e) {
           console.error("Erro ao buscar coordenadas na hora de salvar:", e);
         }
-      } else {
-        payload.lat = null;
-        payload.lng = null;
       }
 
       if (clienteEditando) {
@@ -195,7 +224,7 @@ export function Clientes() {
       fetchClientes(); 
     } catch (error) {
       console.error('Erro:', error);
-      alert('Erro ao salvar: ' + (error.message || error.details));
+      setErro(`Não foi possível salvar o cliente: ${error.message || error.details || 'erro desconhecido'}`);
     } finally {
       setLoadingForm(false);
     }
@@ -209,30 +238,30 @@ export function Clientes() {
   });
 
   const total = clientesFiltrados.length;
-  const comContrato = clientesFiltrados.filter(c => c.status === 'Com contrato').length;
-  const semContrato = clientesFiltrados.filter(c => c.status === 'Sem contrato').length;
-  const prospeccao = clientesFiltrados.filter(c => c.status === 'Em prospecção').length;
+  const comContrato = clientesFiltrados.filter(c => c.status === STATUS_CLIENTE.COM_CONTRATO).length;
+  const semContrato = clientesFiltrados.filter(c => c.status === STATUS_CLIENTE.SEM_CONTRATO).length;
+  const prospeccao = clientesFiltrados.filter(c => c.status === STATUS_CLIENTE.EM_PROSPECCAO).length;
 
   const renderStatus = (status) => {
-    const stat = status || 'Em prospecção';
-    
-    if (stat === 'Com contrato') {
+    const stat = status || STATUS_CLIENTE_PADRAO;
+
+    if (stat === STATUS_CLIENTE.COM_CONTRATO) {
       return (
         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 border border-green-400 text-green-700 bg-transparent rounded-sm text-[11px] font-bold">
-          <CheckCircle2 size={13} /> Com contrato
+          <CheckCircle2 size={13} /> {STATUS_CLIENTE.COM_CONTRATO}
         </span>
       );
     }
-    if (stat === 'Sem contrato') {
+    if (stat === STATUS_CLIENTE.SEM_CONTRATO) {
       return (
         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 border border-red-400 text-red-700 bg-transparent rounded-sm text-[11px] font-bold">
-          <FileX size={13} /> Sem contrato
+          <FileX size={13} /> {STATUS_CLIENTE.SEM_CONTRATO}
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 border border-yellow-400 text-yellow-700 bg-transparent rounded-sm text-[11px] font-bold">
-        <AlertCircle size={13} /> Em prospecção
+        <AlertCircle size={13} /> {STATUS_CLIENTE.EM_PROSPECCAO}
       </span>
     );
   };
@@ -265,9 +294,17 @@ export function Clientes() {
 
   return (
     <div className="w-full h-full flex flex-col relative">
-      
+
+      {/* AVISO DE FALHA (carregar ou salvar) */}
+      {erro && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] max-w-[90vw] bg-red-600 text-white px-4 py-2.5 rounded-none shadow-sm text-[13px] font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <AlertCircle size={16} className="shrink-0" />
+          {erro}
+        </div>
+      )}
+
       <div className="flex flex-col h-full bg-white border border-gray-400 shadow-sm animate-in fade-in duration-300 antialiased text-sm">
-        
+
         {/* CABEÇALHO / CONTROLES IDÊNTICO AO MONITORAMENTO */}
         <div className="flex flex-col lg:flex-row items-center gap-2 p-3 md:p-4 border-b border-gray-400 shrink-0 w-full bg-white">
           
@@ -294,9 +331,7 @@ export function Clientes() {
                 className="bg-white border border-gray-400 pl-8 pr-8 py-2 text-[12px] text-gray-700 outline-none focus:ring-1 focus:ring-green-500 font-medium rounded-none cursor-pointer appearance-none"
               >
                 <option value="Todos">Todos os status</option>
-                <option value="Com contrato">Com contrato</option>
-                <option value="Sem contrato">Sem contrato</option>
-                <option value="Em prospecção">Em prospecção</option>
+                {STATUS_CLIENTE_LISTA.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-gray-600">
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
@@ -453,9 +488,7 @@ export function Clientes() {
                       <div className="col-span-1 md:col-span-1 lg:col-span-2">
                         <label className={labelClass}><Activity size={13}/> Status Comercial</label>
                         <select name="status" value={formData.status} onChange={handleChange} className={`${inputClass} font-medium text-gray-800 cursor-pointer`}>
-                          <option value="Com contrato">Com contrato</option>
-                          <option value="Sem contrato">Sem contrato</option>
-                          <option value="Em prospecção">Em prospecção</option>
+                          {STATUS_CLIENTE_LISTA.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </div>
 

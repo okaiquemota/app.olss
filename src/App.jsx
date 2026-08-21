@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import {
   Activity,
   FileText,
@@ -14,15 +14,18 @@ import {
   Zap,
 } from 'lucide-react';
 
-import { Clientes } from './pages/Clientes';
-import { Configuracoes } from './pages/Configuracoes';
 import { Login } from './pages/Login';
-import { MapaUsinas } from './pages/MapaUsinas';
-import { Monitoramento } from './pages/Monitoramento';
-import { Pendencias } from './pages/Pendencias';
-import { Relatorios } from './pages/Relatorios';
-import { VisaoGeral } from './pages/VisaoGeral';
 import { supabase } from './lib/supabase';
+
+// Cada tela vira um chunk próprio: quem abre só "Lembretes" não baixa o
+// gerador de PDF (Relatórios), o Leaflet (Mapa) nem o Recharts (Visão Geral).
+const Clientes = lazy(() => import('./pages/Clientes').then(m => ({ default: m.Clientes })));
+const Configuracoes = lazy(() => import('./pages/Configuracoes').then(m => ({ default: m.Configuracoes })));
+const MapaUsinas = lazy(() => import('./pages/MapaUsinas').then(m => ({ default: m.MapaUsinas })));
+const Monitoramento = lazy(() => import('./pages/Monitoramento').then(m => ({ default: m.Monitoramento })));
+const Pendencias = lazy(() => import('./pages/Pendencias').then(m => ({ default: m.Pendencias })));
+const Relatorios = lazy(() => import('./pages/Relatorios').then(m => ({ default: m.Relatorios })));
+const VisaoGeral = lazy(() => import('./pages/VisaoGeral').then(m => ({ default: m.VisaoGeral })));
 
 const MENU_SECTIONS = [
   {
@@ -198,13 +201,19 @@ function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-3 md:p-4">
-          {telaAtiva === 'dashboard' && <VisaoGeral />}
-          {telaAtiva === 'relatorios' && <Relatorios />}
-          {telaAtiva === 'clientes' && <Clientes />}
-          {telaAtiva === 'pendencias' && <Pendencias />}
-          {telaAtiva === 'monitoramento' && <Monitoramento />}
-          {telaAtiva === 'mapa' && <MapaUsinas />}
-          {telaAtiva === 'configuracoes' && <Configuracoes />}
+          <Suspense fallback={
+            <div className="w-full h-full flex items-center justify-center text-gray-600">
+              <Loader2 className="animate-spin" size={24} />
+            </div>
+          }>
+            {telaAtiva === 'dashboard' && <VisaoGeral />}
+            {telaAtiva === 'relatorios' && <Relatorios />}
+            {telaAtiva === 'clientes' && <Clientes />}
+            {telaAtiva === 'pendencias' && <Pendencias />}
+            {telaAtiva === 'monitoramento' && <Monitoramento />}
+            {telaAtiva === 'mapa' && <MapaUsinas />}
+            {telaAtiva === 'configuracoes' && <Configuracoes />}
+          </Suspense>
 
           {!['dashboard', 'relatorios', 'clientes', 'pendencias', 'monitoramento', 'mapa', 'configuracoes'].includes(telaAtiva) && (
             <div className="h-full border border-dashed border-gray-400 bg-white flex items-center justify-center">

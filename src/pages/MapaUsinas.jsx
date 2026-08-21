@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import { Search, MapPin, Navigation, CheckCircle2, AlertCircle, ShieldAlert, X, Loader2, DollarSign, Activity } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { STATUS_CLIENTE, STATUS_CLIENTE_PADRAO } from '../lib/statusCliente';
 
 // ==========================================
 // ÍCONES CUSTOMIZADOS: PREENCHIMENTO (Comercial) + BORDA (Operacional)
@@ -12,7 +13,7 @@ const createIcon = (statusComercial, statusOperacional) => {
   let borderClass = 'border-0'; // Sem contorno por padrão
 
   // Define a cor de fundo (Comercial) e só aplica borda se tiver contrato
-  if (statusComercial === 'Com contrato') {
+  if (statusComercial === STATUS_CLIENTE.COM_CONTRATO) {
     fillClass = 'bg-green-500';
     
     // Cor da Borda (Operacional) exclusiva para contratos ativos
@@ -21,9 +22,9 @@ const createIcon = (statusComercial, statusOperacional) => {
     else if (statusOperacional === 'problema') borderClass = 'border-[3px] border-[#FFC000]';
     else if (statusOperacional === 'vencido') borderClass = 'border-[3px] border-[#FF0000]';
     
-  } else if (statusComercial === 'Sem contrato') {
+  } else if (statusComercial === STATUS_CLIENTE.SEM_CONTRATO) {
     fillClass = 'bg-red-500';
-  } else if (statusComercial === 'Em prospecção') {
+  } else if (statusComercial === STATUS_CLIENTE.EM_PROSPECCAO) {
     fillClass = 'bg-yellow-500';
   }
 
@@ -59,7 +60,7 @@ export function MapaUsinas() {
           nome: cliente.nome_razao_social,
           lat: parseFloat(cliente.lat),
           lng: parseFloat(cliente.lng),
-          statusComercial: cliente.status || 'Em prospecção',
+          statusComercial: cliente.status || STATUS_CLIENTE_PADRAO,
           statusOperacional: cliente.status_monitoramento?.toLowerCase() || 'normal',
           endereco: cliente.endereco,
           obs: cliente.observacoes_internas
@@ -78,8 +79,8 @@ export function MapaUsinas() {
   );
 
   const getComercialVisual = (status) => {
-    if (status === 'Com contrato') return { bg: 'bg-green-50 text-green-700 border-green-200' };
-    if (status === 'Sem contrato') return { bg: 'bg-red-50 text-red-700 border-red-200' };
+    if (status === STATUS_CLIENTE.COM_CONTRATO) return { bg: 'bg-green-50 text-green-700 border-green-200' };
+    if (status === STATUS_CLIENTE.SEM_CONTRATO) return { bg: 'bg-red-50 text-red-700 border-red-200' };
     return { bg: 'bg-yellow-50 text-yellow-700 border-yellow-200' }; // Prospecção
   };
 
@@ -165,7 +166,7 @@ export function MapaUsinas() {
              </span>
              
              {/* TAG OPERACIONAL (Só aparece se o cliente tiver contrato ativo) */}
-             {usinaSelecionada.statusComercial === 'Com contrato' && (
+             {usinaSelecionada.statusComercial === STATUS_CLIENTE.COM_CONTRATO && (
                <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-none border uppercase tracking-wider ${getOperacionalVisual(usinaSelecionada.statusOperacional).bg} ${getOperacionalVisual(usinaSelecionada.statusOperacional).cor}`}>
                   {getOperacionalVisual(usinaSelecionada.statusOperacional).icone} Op: {getOperacionalVisual(usinaSelecionada.statusOperacional).label}
                </span>

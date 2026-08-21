@@ -18,7 +18,10 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
     rules: {
-      'react-hooks/purity': 'off',
+      // As telas carregam dados do Supabase em useEffect no mount, que é o
+      // padrão pretendido aqui — sair dele exigiria uma lib de data fetching.
+      // A regra 'react-hooks/purity' fica ligada de propósito: foi ela que
+      // pegou as chaves duplicadas de Date.now() na lista de UCs.
       'react-hooks/set-state-in-effect': 'off',
     },
   },

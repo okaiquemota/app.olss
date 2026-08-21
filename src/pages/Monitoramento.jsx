@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Search, ExternalLink, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { linkSeguro } from '../lib/links';
+import { STATUS_CLIENTE } from '../lib/statusCliente';
 import { CopyButton } from '../components/CopyButton';
 
 export function Monitoramento() {
@@ -23,7 +25,7 @@ export function Monitoramento() {
 
       if (resPlataformas.data) setPlataformas(resPlataformas.data);
       if (resClientes.data) {
-        setClientes(resClientes.data.filter(c => c.status === 'Com contrato'));
+        setClientes(resClientes.data.filter(c => c.status === STATUS_CLIENTE.COM_CONTRATO));
       }
       setLoading(false);
     };
@@ -39,7 +41,7 @@ export function Monitoramento() {
     );
   });
 
-  const getLinkPlataforma = (nome) => plataformas.find(p => p.nome?.toLowerCase() === nome?.toLowerCase())?.link || null;
+  const getLinkPlataforma = (nome) => linkSeguro(plataformas.find(p => p.nome?.toLowerCase() === nome?.toLowerCase())?.link);
 
   return (
     <div className="w-full h-full flex flex-col">

@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts';
 import { supabase } from '../lib/supabase';
+import { STATUS_CLIENTE } from '../lib/statusCliente';
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -35,9 +36,9 @@ export function VisaoGeral() {
       setClientes(listaClientes);
 
       const totalClientes = listaClientes.length;
-      const comContrato = listaClientes.filter(c => c.status === 'Com contrato').length;
-      const semContrato = listaClientes.filter(c => c.status === 'Sem contrato').length;
-      const emProspeccao = listaClientes.filter(c => c.status === 'Em prospecção').length;
+      const comContrato = listaClientes.filter(c => c.status === STATUS_CLIENTE.COM_CONTRATO).length;
+      const semContrato = listaClientes.filter(c => c.status === STATUS_CLIENTE.SEM_CONTRATO).length;
+      const emProspeccao = listaClientes.filter(c => c.status === STATUS_CLIENTE.EM_PROSPECCAO).length;
 
       const hoje = new Date();
       const mesAtualLabel = `${MESES[hoje.getMonth()]}/${hoje.getFullYear()}`;
@@ -68,9 +69,9 @@ export function VisaoGeral() {
   }, []);
 
   const totalClientes = clientes.length;
-  const comContrato = clientes.filter(c => c.status === 'Com contrato').length;
-  const semContrato = clientes.filter(c => c.status === 'Sem contrato').length;
-  const prospeccao = clientes.filter(c => c.status === 'Em prospecção').length;
+  const comContrato = clientes.filter(c => c.status === STATUS_CLIENTE.COM_CONTRATO).length;
+  const semContrato = clientes.filter(c => c.status === STATUS_CLIENTE.SEM_CONTRATO).length;
+  const prospeccao = clientes.filter(c => c.status === STATUS_CLIENTE.EM_PROSPECCAO).length;
 
   const cards = [
     { label: 'Total de Clientes', valor: totalClientes, icone: Users, cor: 'text-gray-800' },
