@@ -1,27 +1,18 @@
 import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
-import { Search, MapPin, Navigation, CheckCircle2, AlertCircle, ShieldAlert, X, Loader2, DollarSign, Activity } from 'lucide-react';
+import { Search, MapPin, Navigation, AlertCircle, X, Loader2, DollarSign } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { STATUS_CLIENTE, STATUS_CLIENTE_PADRAO } from '../lib/statusCliente';
 
 // ==========================================
-// ÍCONES CUSTOMIZADOS: PREENCHIMENTO (Comercial) + BORDA (Operacional)
+// ÍCONE DO MARCADOR: cor pelo status comercial
 // ==========================================
-const createIcon = (statusComercial, statusOperacional) => {
+const createIcon = (statusComercial) => {
   let fillClass = 'bg-gray-400';
-  let borderClass = 'border-0'; // Sem contorno por padrão
 
-  // Define a cor de fundo (Comercial) e só aplica borda se tiver contrato
   if (statusComercial === STATUS_CLIENTE.COM_CONTRATO) {
     fillClass = 'bg-green-500';
-    
-    // Cor da Borda (Operacional) exclusiva para contratos ativos
-    if (statusOperacional === 'normal') borderClass = 'border-[3px] border-green-600';
-    else if (statusOperacional === 'offline') borderClass = 'border-[3px] border-[#FFFF00]';
-    else if (statusOperacional === 'problema') borderClass = 'border-[3px] border-[#FFC000]';
-    else if (statusOperacional === 'vencido') borderClass = 'border-[3px] border-[#FF0000]';
-    
   } else if (statusComercial === STATUS_CLIENTE.SEM_CONTRATO) {
     fillClass = 'bg-red-500';
   } else if (statusComercial === STATUS_CLIENTE.EM_PROSPECCAO) {
@@ -30,7 +21,7 @@ const createIcon = (statusComercial, statusOperacional) => {
 
   return L.divIcon({
     className: 'custom-leaflet-icon',
-    html: `<div class="w-5 h-5 rounded-full shadow-md ${fillClass} ${borderClass}"></div>`,
+    html: `<div class="w-5 h-5 rounded-full shadow-md ${fillClass}"></div>`,
     iconSize: [20, 20],
     iconAnchor: [10, 10]
   });
@@ -42,12 +33,18 @@ export function MapaUsinas() {
   
   const [usinas, setUsinas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState('');
 
   useEffect(() => {
     const carregarUsinas = async () => {
-      const { data, error } = await supabase.from('clientes').select('*');
-      
+      // Só as colunas que o mapa usa: com select('*') as senhas dos portais
+      // vinham para esta tela sem necessidade nenhuma.
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('id, nome_razao_social, lat, lng, status, endereco, observacoes_internas');
+
       if (error || !data) {
+        setErro('Não foi possível carregar as usinas. Verifique a conexão e recarregue a página.');
         setLoading(false);
         return;
       }
@@ -61,7 +58,6 @@ export function MapaUsinas() {
           lat: parseFloat(cliente.lat),
           lng: parseFloat(cliente.lng),
           statusComercial: cliente.status || STATUS_CLIENTE_PADRAO,
-          statusOperacional: cliente.status_monitoramento?.toLowerCase() || 'normal',
           endereco: cliente.endereco,
           obs: cliente.observacoes_internas
         }));
@@ -84,13 +80,6 @@ export function MapaUsinas() {
     return { bg: 'bg-yellow-50 text-yellow-700 border-yellow-200' }; // Prospecção
   };
 
-  const getOperacionalVisual = (status) => {
-    if (status === 'offline') return { cor: 'text-yellow-700', bg: 'bg-yellow-50 border-[#FFFF00]', icone: <AlertCircle size={13}/>, label: 'Offline' };
-    if (status === 'problema') return { cor: 'text-orange-700', bg: 'bg-orange-50 border-[#FFC000]', icone: <AlertCircle size={13}/>, label: 'Problema' };
-    if (status === 'vencido') return { cor: 'text-red-700', bg: 'bg-red-50 border-[#FF0000]', icone: <ShieldAlert size={13}/>, label: 'Vencido' };
-    return { cor: 'text-green-700', bg: 'bg-green-50 border-green-600', icone: <CheckCircle2 size={13}/>, label: 'Normal' };
-  };
-
   if (loading) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 border border-gray-400 rounded-none text-gray-600">
@@ -102,6 +91,14 @@ export function MapaUsinas() {
 
   return (
     <div className="-m-3 md:-m-4 h-[calc(100vh-48px)] relative z-0 overflow-hidden animate-in fade-in duration-300 bg-gray-200 border border-gray-400">
+
+      {/* AVISO DE FALHA */}
+      {erro && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1100] max-w-[90vw] bg-red-600 text-white px-4 py-2.5 rounded-none shadow-sm text-[13px] font-semibold flex items-center gap-2">
+          <AlertCircle size={16} className="shrink-0" />
+          {erro}
+        </div>
+      )}
       
       {/* BARRA DE BUSCA */}
       <div className="absolute top-3 left-3 md:top-4 md:left-4 z-[1000] w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 pr-3 sm:pr-0">
@@ -117,23 +114,13 @@ export function MapaUsinas() {
         </div>
       </div>
 
-      {/* LEGENDA DUPLA (Preenchimento vs Contorno) */}
+      {/* LEGENDA — cor do marcador por status comercial */}
       <div className="hidden sm:flex flex-col absolute top-3 right-3 md:top-4 md:right-4 z-[1000] bg-white border border-gray-400 p-3 rounded-none shadow-sm gap-2">
-        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1"><DollarSign size={12}/> Preenchimento (Comercial)</div>
+        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1"><DollarSign size={12}/> Status Comercial</div>
         <div className="grid grid-cols-2 gap-y-2 gap-x-4">
           <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-green-500"></div><span className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">Contrato</span></div>
           <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-500"></div><span className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">S/ Contrato</span></div>
           <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><span className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">Prospecção</span></div>
-        </div>
-        
-        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-1 mb-1 border-t border-gray-100 pt-2 flex items-center gap-1">
-          <Activity size={12}/> Contorno (Apenas c/ contrato)
-        </div>
-        <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full border-[2px] border-green-600 bg-transparent"></div><span className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">Normal</span></div>
-          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full border-[2px] border-[#FFFF00] bg-transparent"></div><span className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">Offline</span></div>
-          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full border-[2px] border-[#FFC000] bg-transparent"></div><span className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">Problema</span></div>
-          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full border-[2px] border-[#FF0000] bg-transparent"></div><span className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">Vencido</span></div>
         </div>
       </div>
 
@@ -164,13 +151,6 @@ export function MapaUsinas() {
              <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-none border uppercase tracking-wider ${getComercialVisual(usinaSelecionada.statusComercial).bg}`}>
                 <DollarSign size={11} /> {usinaSelecionada.statusComercial}
              </span>
-             
-             {/* TAG OPERACIONAL (Só aparece se o cliente tiver contrato ativo) */}
-             {usinaSelecionada.statusComercial === STATUS_CLIENTE.COM_CONTRATO && (
-               <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-none border uppercase tracking-wider ${getOperacionalVisual(usinaSelecionada.statusOperacional).bg} ${getOperacionalVisual(usinaSelecionada.statusOperacional).cor}`}>
-                  {getOperacionalVisual(usinaSelecionada.statusOperacional).icone} Op: {getOperacionalVisual(usinaSelecionada.statusOperacional).label}
-               </span>
-             )}
           </div>
 
           {usinaSelecionada.obs && (
@@ -215,7 +195,7 @@ export function MapaUsinas() {
           <Marker 
             key={usina.id} 
             position={[usina.lat, usina.lng]}
-            icon={createIcon(usina.statusComercial, usina.statusOperacional)}
+            icon={createIcon(usina.statusComercial)}
             eventHandlers={{
               click: () => setUsinaSelecionada(usina),
             }}

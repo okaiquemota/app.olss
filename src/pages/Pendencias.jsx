@@ -65,6 +65,18 @@ export function Pendencias() {
     return () => clearTimeout(t);
   }, [erro]);
 
+  // Esc fecha os modais abertos
+  useEffect(() => {
+    if (!isModalOpen && !isCategoriaModalOpen) return;
+    const aoTeclar = (e) => {
+      if (e.key !== 'Escape') return;
+      setIsModalOpen(false);
+      setIsCategoriaModalOpen(false);
+    };
+    window.addEventListener('keydown', aoTeclar);
+    return () => window.removeEventListener('keydown', aoTeclar);
+  }, [isModalOpen, isCategoriaModalOpen]);
+
   const mudarFiltroTipo = (tipo) => {
     setFiltroTipo(tipo);
     setFiltroCategoria('Todas');

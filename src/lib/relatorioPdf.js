@@ -1,5 +1,7 @@
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
+import { paraNumero, formatarReal } from './numero';
+import { gerarGraficoGeracaoBase64 } from './graficoGeracao';
 
 // =========================================================
 // SOLUÇÃO DA TELA BRANCA (Compatibilidade com Vite)
@@ -10,18 +12,6 @@ if (pdfFonts && pdfFonts.pdfMake) {
   pdfMake.vfs = window.pdfMake.vfs;
 } else {
   pdfMake.vfs = pdfFonts;
-}
-
-// Função auxiliar para transformar a URL do gráfico em imagem legível pro PDF
-async function fetchImageAsBase64(url) {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }
 
 // =========================================================
@@ -102,73 +92,12 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
 
   const geradora = unidades.find(u => u.tipo === 'Geradora');
   const anoReferencia = (relatorio.mes_referencia || '').split('/')[1] || '';
-  const formatarMoeda = (valor) => (valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const formatarMoeda = (valor) => paraNumero(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   // =========================================================
-  // GERAÇÃO DO GRÁFICO (QuickChart API)
+  // GRÁFICO DE GERAÇÃO (desenhado localmente, sem serviço externo)
   // =========================================================
-  let chartBase64 = null;
-
-  if (historicoGrafico && historicoGrafico.length > 0) {
-    const labels = historicoGrafico.map(h => h.mes);
-    const data = historicoGrafico.map(h => h.geracao);
-
-    const maxVal = Math.max(...data);
-
-    const chartConfig = {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: data,
-          backgroundColor: corOlss,
-          barThickness: 40,
-          borderRadius: 4
-        }]
-      },
-      options: {
-        legend: { display: false },
-        plugins: {
-          datalabels: {
-            display: true,
-            anchor: 'end',
-            align: 'top',
-            color: corOlss,
-            font: { weight: 'bold', size: 13 },
-            formatter: (val) => val > 0 ? val : ''
-          }
-        },
-        scales: {
-          yAxes: [{
-            display: true,
-            gridLines: {
-              color: '#E2E8F0',
-              borderDash: [4, 4]
-            },
-            ticks: {
-              beginAtZero: true,
-              suggestedMax: maxVal + (maxVal * 0.25),
-              fontColor: '#64748B',
-              fontSize: 10
-            }
-          }],
-          xAxes: [{
-            gridLines: { display: false },
-            ticks: { fontStyle: 'bold', fontSize: 12, fontColor: '#1E293B' }
-          }]
-        },
-        layout: { padding: { top: 25, left: 10, right: 10 } }
-      }
-    };
-
-    const chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}&w=600&h=250&bkg=white&devicePixelRatio=2`;
-
-    try {
-      chartBase64 = await fetchImageAsBase64(chartUrl);
-    } catch (error) {
-      console.error("Falha ao carregar gráfico:", error);
-    }
-  }
+  const chartBase64 = gerarGraficoGeracaoBase64(historicoGrafico);
 
   // =========================================================
   // MONTAGEM DO DOCUMENTO PDF
@@ -346,11 +275,11 @@ export const gerarPdfRelatorio = async ({ cliente, relatorio, unidades, economia
           ...unidades.map(u => [
             { text: `${u.tipo}\n${u.numero_uc}`, style: 'tableCell', bold: true },
             { text: `${Math.round(u.consumoTotalUC)} kWh`, style: 'tableCell' },
-            { text: `R$ ${parseFloat(u.precoKwh || 0).toFixed(2).replace('.', ',')}`, style: 'tableCell' },
-            { text: `R$ ${parseFloat(u.tarifaConta || 0).toFixed(2).replace('.', ',')}`, style: 'tableCell' },
-            { text: `R$ ${u.valorSemSistema.toFixed(2).replace('.', ',')}`, style: 'tableCell' },
-            { text: `R$ ${parseFloat(u.valorConta || 0).toFixed(2).replace('.', ',')}`, style: 'tableCell' },
-            { text: `R$ ${u.economia.toFixed(2).replace('.', ',')}`, style: 'tableCell', color: u.economia >= 0 ? corPositivo : corNegativo, bold: true }
+            { text: `R$ ${formatarReal(u.precoKwh)}`, style: 'tableCell' },
+            { text: `R$ ${formatarReal(u.tarifaConta)}`, style: 'tableCell' },
+            { text: `R$ ${formatarReal(u.valorSemSistema)}`, style: 'tableCell' },
+            { text: `R$ ${formatarReal(u.valorConta)}`, style: 'tableCell' },
+            { text: `R$ ${formatarReal(u.economia)}`, style: 'tableCell', color: paraNumero(u.economia) >= 0 ? corPositivo : corNegativo, bold: true }
           ])
         ]
       },
