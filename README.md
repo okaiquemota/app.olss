@@ -9,7 +9,7 @@ Painel interno para gestão operacional de usinas solares: cadastro de clientes/
 - Supabase (autenticação + banco de dados com Row Level Security)
 - React Leaflet (mapa de usinas)
 - Recharts (gráficos)
-- jsPDF / pdfmake (geração de relatórios em PDF)
+- pdfmake (geração de relatórios em PDF)
 
 ## Setup
 
