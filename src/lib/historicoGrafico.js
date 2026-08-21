@@ -1,25 +1,51 @@
+import { paraNumero } from './numero';
+
 const MESES_MAP = { Jan: 1, Fev: 2, Mar: 3, Abr: 4, Mai: 5, Jun: 6, Jul: 7, Ago: 8, Set: 9, Out: 10, Nov: 11, Dez: 12 };
 
-// Monta os últimos 6 meses (cronológicos, sem duplicata) de geração de um cliente para o gráfico do PDF
-// `relatorios` já deve vir filtrado pelo chamador (ex: excluindo o relatório em edição)
+const ordemDoMes = (mesReferencia) => {
+  const [mes, ano] = (mesReferencia || '').split('/');
+  const numeroMes = MESES_MAP[mes];
+  if (!numeroMes || !ano) return null;
+  return parseInt(ano, 10) * 100 + numeroMes;
+};
+
+const QUANTIDADE_MESES = 6;
+
+// Monta os últimos meses de geração de um cliente para o gráfico do PDF.
+// `relatorios` já deve vir filtrado pelo chamador (ex: excluindo o em edição);
+// `extra` é o relatório que está sendo salvo agora e sempre vale para o mês dele.
+//
+// Um mês pode ter mais de um relatório gravado (nada impede isso no banco). Nesse
+// caso vale o mais recente: antes o resultado dependia da ordem do array e acabava
+// escolhendo o mais antigo, então o PDF mostrava um valor já corrigido na tela.
 export function montarHistoricoGrafico(relatorios, clienteId, extra = null) {
-  const historicoBruto = relatorios.filter(r => r.cliente_id === clienteId);
-  if (extra) historicoBruto.push(extra);
+  const porMes = new Map();
 
-  historicoBruto.sort((a, b) => {
-    const [mesA, anoA] = a.mes_referencia.split('/');
-    const [mesB, anoB] = b.mes_referencia.split('/');
-    return (parseInt(anoA) * 100 + MESES_MAP[mesA]) - (parseInt(anoB) * 100 + MESES_MAP[mesB]);
-  });
+  const considerar = (mesReferencia, geracao, gravadoEm, ehAtual) => {
+    const ordem = ordemDoMes(mesReferencia);
+    if (ordem === null) return;
 
-  const historicoAgrupado = {};
-  historicoBruto.forEach(r => {
-    historicoAgrupado[r.mes_referencia] = parseFloat(r.geracao_atual) || 0;
-  });
+    const existente = porMes.get(mesReferencia);
+    if (existente) {
+      // O relatório sendo salvo agora ganha de qualquer versão já gravada
+      if (existente.ehAtual) return;
+      if (!ehAtual && gravadoEm <= existente.gravadoEm) return;
+    }
 
-  const chavesMeses = Object.keys(historicoAgrupado).slice(-6);
-  return chavesMeses.map(chave => ({
-    mes: chave.substring(0, 3),
-    geracao: historicoAgrupado[chave],
-  }));
+    porMes.set(mesReferencia, { ordem, geracao: paraNumero(geracao), gravadoEm, ehAtual });
+  };
+
+  relatorios
+    .filter(r => r.cliente_id === clienteId)
+    .forEach(r => considerar(r.mes_referencia, r.geracao_atual, r.created_at || '', false));
+
+  if (extra) considerar(extra.mes_referencia, extra.geracao_atual, '', true);
+
+  return [...porMes.entries()]
+    .sort((a, b) => a[1].ordem - b[1].ordem)
+    .slice(-QUANTIDADE_MESES)
+    .map(([mesReferencia, dados]) => ({
+      mes: mesReferencia.substring(0, 3),
+      geracao: dados.geracao,
+    }));
 }
