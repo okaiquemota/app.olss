@@ -43,10 +43,10 @@ export function Configuracoes() {
   return (
     <div className="w-full h-full flex flex-col gap-4 animate-in fade-in duration-300 antialiased text-sm">
 
-      <div className="bg-white border border-gray-300">
-        <div className="px-4 py-2.5 border-b border-gray-300 bg-gray-100 flex items-center gap-2">
-          <LayoutGrid size={14} className="text-gray-500" />
-          <h3 className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">Plataformas de Monitoramento</h3>
+      <div className="bg-white border border-gray-400 shadow-sm">
+        <div className="px-4 py-2.5 border-b border-gray-400 bg-gray-200 flex items-center gap-2">
+          <LayoutGrid size={14} className="text-gray-600" />
+          <h3 className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Plataformas de Monitoramento</h3>
         </div>
 
         <div className="p-4 space-y-4">
@@ -56,14 +56,14 @@ export function Configuracoes() {
               placeholder="Nome da plataforma"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              className="flex-1 bg-white border border-gray-300 rounded-none px-3 py-2 text-[12px] focus:ring-1 focus:ring-green-500 outline-none"
+              className="flex-1 bg-white border border-gray-400 rounded-none px-3 py-2 text-[12px] focus:ring-1 focus:ring-green-500 outline-none"
             />
             <input
               type="text"
               placeholder="Link (ex: https://...)"
               value={link}
               onChange={(e) => setLink(e.target.value)}
-              className="flex-1 bg-white border border-gray-300 rounded-none px-3 py-2 text-[12px] focus:ring-1 focus:ring-green-500 outline-none"
+              className="flex-1 bg-white border border-gray-400 rounded-none px-3 py-2 text-[12px] focus:ring-1 focus:ring-green-500 outline-none"
             />
             <button
               type="submit"
@@ -75,13 +75,13 @@ export function Configuracoes() {
           </form>
 
           {loading ? (
-            <div className="flex items-center justify-center py-8 text-gray-400 text-[13px]">
+            <div className="flex items-center justify-center py-8 text-gray-500 text-[13px]">
               <Loader2 className="animate-spin mr-2" size={16} /> Carregando plataformas...
             </div>
           ) : (
-            <div className="border border-gray-200 divide-y divide-gray-200">
+            <div className="border border-gray-300 divide-y divide-gray-200">
               {plataformas.map(plat => (
-                <div key={plat.id} className="flex justify-between items-center px-3 py-2.5 hover:bg-gray-50">
+                <div key={plat.id} className="flex justify-between items-center px-3 py-2.5 hover:bg-gray-100">
                   <div className="flex items-center gap-2">
                     <span className="text-[12px] font-medium text-gray-800">{plat.nome}</span>
                     {plat.link && (
@@ -92,7 +92,7 @@ export function Configuracoes() {
                   </div>
                   <button
                     onClick={() => handleDelete(plat.id)}
-                    className="text-gray-400 hover:text-red-600 transition-colors p-1.5 hover:bg-red-50 border border-transparent hover:border-red-200 rounded-none cursor-pointer"
+                    className="text-gray-500 hover:text-red-600 transition-colors p-1.5 hover:bg-red-50 border border-transparent hover:border-red-200 rounded-none cursor-pointer"
                     title="Remover"
                   >
                     <Trash2 size={14} />
@@ -100,7 +100,7 @@ export function Configuracoes() {
                 </div>
               ))}
               {plataformas.length === 0 && (
-                <p className="text-center text-[12px] text-gray-500 py-6 font-medium">Nenhuma plataforma cadastrada.</p>
+                <p className="text-center text-[12px] text-gray-600 py-6 font-medium">Nenhuma plataforma cadastrada.</p>
               )}
             </div>
           )}

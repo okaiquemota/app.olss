@@ -237,7 +237,7 @@ export function Clientes() {
     );
   };
 
-  const renderCelulaComCopia = (texto, estiloPadrao = "text-[12px] text-gray-600 font-medium") => {
+  const renderCelulaComCopia = (texto, estiloPadrao = "text-[12px] text-gray-700 font-medium") => {
     return (
       <div className="flex items-center justify-between gap-2">
         <span className={`${estiloPadrao} truncate`}>{texto || '--'}</span>
@@ -248,7 +248,7 @@ export function Clientes() {
               e.stopPropagation();
               navigator.clipboard.writeText(texto);
             }}
-            className="p-1 text-gray-300 hover:text-green-600 opacity-0 group-hover:opacity-100 transition-all cursor-pointer rounded-none shrink-0"
+            className="p-1 text-gray-400 hover:text-green-600 opacity-0 group-hover:opacity-100 transition-all cursor-pointer rounded-none shrink-0"
             title="Copiar"
           >
             <Copy size={13} strokeWidth={2.5} />
@@ -258,27 +258,27 @@ export function Clientes() {
     );
   };
 
-  const inputClass = "w-full bg-white border border-gray-300 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-all rounded-none placeholder:text-gray-400";
-  const labelClass = "block text-[11px] font-bold text-gray-600 mb-1.5 uppercase tracking-wider flex items-center gap-1.5";
-  const cardHeaderClass = "px-3 py-2 border-b border-gray-300 bg-gray-100 flex items-center justify-between";
-  const cardTitleClass = "text-[11px] font-bold text-gray-600 uppercase tracking-wider flex items-center gap-2";
+  const inputClass = "w-full bg-white border border-gray-400 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-all rounded-none placeholder:text-gray-500";
+  const labelClass = "block text-[11px] font-bold text-gray-700 mb-1.5 uppercase tracking-wider flex items-center gap-1.5";
+  const cardHeaderClass = "px-3 py-2 border-b border-gray-400 bg-gray-200 flex items-center justify-between";
+  const cardTitleClass = "text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2";
 
   return (
     <div className="w-full h-full flex flex-col relative">
       
-      <div className="flex flex-col h-full bg-white border border-gray-300 shadow-sm animate-in fade-in duration-300 antialiased text-sm">
+      <div className="flex flex-col h-full bg-white border border-gray-400 shadow-sm animate-in fade-in duration-300 antialiased text-sm">
         
         {/* CABEÇALHO / CONTROLES IDÊNTICO AO MONITORAMENTO */}
-        <div className="flex flex-col lg:flex-row items-center gap-2 p-3 md:p-4 border-b border-gray-300 shrink-0 w-full bg-white">
+        <div className="flex flex-col lg:flex-row items-center gap-2 p-3 md:p-4 border-b border-gray-400 shrink-0 w-full bg-white">
           
           <div className="relative flex-1 w-full lg:w-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
             <input 
               type="text" 
               placeholder="Buscar em cliente, documento ou email..." 
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-none text-[13px] font-medium text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 placeholder:text-gray-400 transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-white border border-gray-400 rounded-none text-[13px] font-medium text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 placeholder:text-gray-500 transition-all"
             />
           </div>
           
@@ -286,19 +286,19 @@ export function Clientes() {
             
             <div className="relative">
                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                 <Filter size={14} className="text-gray-500" />
+                 <Filter size={14} className="text-gray-600" />
                </div>
               <select 
                 value={filtroStatus} 
                 onChange={(e) => setFiltroStatus(e.target.value)}
-                className="bg-white border border-gray-300 pl-8 pr-8 py-2 text-[12px] text-gray-700 outline-none focus:ring-1 focus:ring-green-500 font-medium rounded-none cursor-pointer appearance-none"
+                className="bg-white border border-gray-400 pl-8 pr-8 py-2 text-[12px] text-gray-700 outline-none focus:ring-1 focus:ring-green-500 font-medium rounded-none cursor-pointer appearance-none"
               >
                 <option value="Todos">Todos os status</option>
                 <option value="Com contrato">Com contrato</option>
                 <option value="Sem contrato">Sem contrato</option>
                 <option value="Em prospecção">Em prospecção</option>
               </select>
-               <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-gray-500">
+               <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-gray-600">
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
                </div>
             </div>
@@ -313,14 +313,14 @@ export function Clientes() {
         </div>
 
         {/* BARRA DE RESUMO COMERCIAL */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-gray-300 bg-white shrink-0">
-          <div className="px-4 py-2 border-r border-gray-300 text-[12px] text-gray-800">
+        <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-gray-400 bg-white shrink-0">
+          <div className="px-4 py-2 border-r border-gray-400 text-[12px] text-gray-800">
             <span className="font-extrabold">{total}</span> cadastros
           </div>
-          <div className="px-4 py-2 border-r border-gray-300 text-[12px] text-green-700">
+          <div className="px-4 py-2 border-r border-gray-400 text-[12px] text-green-700">
             <span className="font-extrabold">{comContrato}</span> com contrato
           </div>
-          <div className="px-4 py-2 border-r border-gray-300 text-[12px] text-red-600">
+          <div className="px-4 py-2 border-r border-gray-400 text-[12px] text-red-600">
             <span className="font-extrabold">{semContrato}</span> sem contrato
           </div>
           <div className="hidden sm:block px-4 py-2 text-[12px] text-yellow-600">
@@ -331,20 +331,20 @@ export function Clientes() {
         {/* TABELA DE CLIENTES */}
         <div className="flex-1 overflow-y-auto bg-white flex flex-col">
           {loadingLista ? (
-            <div className="flex justify-center items-center flex-1 text-gray-400 text-[13px] min-h-[200px]">
+            <div className="flex justify-center items-center flex-1 text-gray-500 text-[13px] min-h-[200px]">
               <Loader2 className="animate-spin mr-2" size={18} /> Carregando cadastros...
             </div>
           ) : (
             <div className="overflow-x-auto flex-1">
               <table className="w-full text-left border-collapse whitespace-nowrap">
-                <thead className="bg-gray-50 sticky top-0 z-10 border-b border-gray-300">
-                  <tr className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">
-                    <th className="px-4 py-3 border-r border-gray-300">Cliente / Empresa</th>
-                    <th className="px-4 py-3 border-r border-gray-300 text-center">UCs</th>
-                    <th className="px-4 py-3 border-r border-gray-300">Status Comercial</th>
-                    <th className="px-4 py-3 border-r border-gray-300">CNPJ/CPF</th>
-                    <th className="px-4 py-3 border-r border-gray-300">Contato</th>
-                    <th className="px-4 py-3 border-r border-gray-300">E-mail</th>
+                <thead className="bg-gray-100 sticky top-0 z-10 border-b border-gray-400">
+                  <tr className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+                    <th className="px-4 py-3 border-r border-gray-400">Cliente / Empresa</th>
+                    <th className="px-4 py-3 border-r border-gray-400 text-center">UCs</th>
+                    <th className="px-4 py-3 border-r border-gray-400">Status Comercial</th>
+                    <th className="px-4 py-3 border-r border-gray-400">CNPJ/CPF</th>
+                    <th className="px-4 py-3 border-r border-gray-400">Contato</th>
+                    <th className="px-4 py-3 border-r border-gray-400">E-mail</th>
                     <th className="px-4 py-3">Endereço</th>
                   </tr>
                 </thead>
@@ -353,26 +353,26 @@ export function Clientes() {
                     <tr 
                       key={cliente.id} 
                       onClick={() => abrirClienteParaEdicao(cliente)}
-                      className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
+                      className="hover:bg-gray-100/50 transition-colors group cursor-pointer"
                     >
-                      <td className="px-4 py-2.5 border-r border-gray-200 min-w-[200px]">
+                      <td className="px-4 py-2.5 border-r border-gray-300 min-w-[200px]">
                         {renderCelulaComCopia(cliente.nome_razao_social, "font-medium text-[12px] text-gray-700")}
                       </td>
-                      <td className="px-4 py-2.5 border-r border-gray-200 text-center">
-                        <span className="inline-flex items-center justify-center px-1.5 py-0.5 bg-gray-100 text-gray-600 font-bold text-[11px] border border-gray-200">
+                      <td className="px-4 py-2.5 border-r border-gray-300 text-center">
+                        <span className="inline-flex items-center justify-center px-1.5 py-0.5 bg-gray-200 text-gray-700 font-bold text-[11px] border border-gray-300">
                           {cliente.ucs ? cliente.ucs.length : 0}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 border-r border-gray-200">
+                      <td className="px-4 py-2.5 border-r border-gray-300">
                         {renderStatus(cliente.status)}
                       </td>
-                      <td className="px-4 py-2.5 border-r border-gray-200 min-w-[130px]">
+                      <td className="px-4 py-2.5 border-r border-gray-300 min-w-[130px]">
                         {renderCelulaComCopia(cliente.documento, "text-[12px] text-gray-700 font-medium")}
                       </td>
-                      <td className="px-4 py-2.5 border-r border-gray-200 min-w-[130px]">
+                      <td className="px-4 py-2.5 border-r border-gray-300 min-w-[130px]">
                         {renderCelulaComCopia(cliente.contato, "text-[12px] text-gray-700 font-medium")}
                       </td>
-                      <td className="px-4 py-2.5 border-r border-gray-200 min-w-[160px]">
+                      <td className="px-4 py-2.5 border-r border-gray-300 min-w-[160px]">
                         {renderCelulaComCopia(cliente.email, "text-[12px] text-gray-700 font-medium")}
                       </td>
                       <td className="px-4 py-2.5 min-w-[200px] max-w-[300px]">
@@ -382,7 +382,7 @@ export function Clientes() {
                   ))}
                   {clientesFiltrados.length === 0 && (
                     <tr>
-                      <td colSpan="7" className="px-4 py-8 text-center text-[12px] text-gray-400">
+                      <td colSpan="7" className="px-4 py-8 text-center text-[12px] text-gray-500">
                         Nenhum cadastro encontrado na busca.
                       </td>
                     </tr>
@@ -400,9 +400,9 @@ export function Clientes() {
           
           <div className="bg-[#f8f9fa] w-full max-w-[1400px] max-h-full flex flex-col shadow-2xl border border-gray-400 animate-in zoom-in-95 duration-200">
             
-            <div className="flex flex-row justify-between items-center gap-3 p-3 md:p-4 border-b border-gray-300 shrink-0 w-full bg-gray-50">
+            <div className="flex flex-row justify-between items-center gap-3 p-3 md:p-4 border-b border-gray-400 shrink-0 w-full bg-gray-100">
               <div className="flex items-center gap-3">
-                <button onClick={() => setView('lista')} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer rounded-none border border-transparent hover:border-red-200">
+                <button onClick={() => setView('lista')} className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer rounded-none border border-transparent hover:border-red-200">
                   <X size={18} strokeWidth={2.5} />
                 </button>
                 <div className="h-5 w-px bg-gray-300" />
@@ -422,10 +422,10 @@ export function Clientes() {
                 
                 <div className="xl:col-span-3 space-y-4">
                   
-                  <div className="bg-white border border-gray-300">
+                  <div className="bg-white border border-gray-400">
                     <div className={cardHeaderClass}>
                       <h3 className={cardTitleClass}>
-                        <User size={14} className="text-gray-500" /> Informações Principais
+                        <User size={14} className="text-gray-600" /> Informações Principais
                       </h3>
                     </div>
                     
@@ -471,39 +471,39 @@ export function Clientes() {
                     </div>
                   </div>
 
-                  <div className="bg-white border border-gray-300">
+                  <div className="bg-white border border-gray-400">
                     <div className={cardHeaderClass}>
                       <h3 className={cardTitleClass}>
-                        <Zap size={14} className="text-gray-500" /> Unidades Consumidoras
+                        <Zap size={14} className="text-gray-600" /> Unidades Consumidoras
                       </h3>
-                      <button type="button" onClick={adicionarUC} className="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-700 px-3 py-1.5 text-[11px] font-bold hover:bg-gray-100 transition-all cursor-pointer rounded-none">
+                      <button type="button" onClick={adicionarUC} className="flex items-center gap-1.5 bg-white border border-gray-400 text-gray-700 px-3 py-1.5 text-[11px] font-bold hover:bg-gray-200 transition-all cursor-pointer rounded-none">
                         <Plus size={14} strokeWidth={2} /> Adicionar UC
                       </button>
                     </div>
                     
                     <div className="p-4">
-                      <div className="border border-gray-300 bg-white">
-                        <div className="grid grid-cols-[120px_1fr_40px] gap-0 border-b border-gray-300 bg-gray-100">
-                          <div className="px-3 py-2 text-[11px] font-bold text-gray-600 uppercase tracking-wider">Tipo</div>
-                          <div className="px-3 py-2 text-[11px] font-bold text-gray-600 uppercase tracking-wider border-l border-gray-300">Número da UC</div>
-                          <div className="px-3 py-2 text-[11px] font-bold text-gray-600 uppercase tracking-wider text-center border-l border-gray-300">Ação</div>
+                      <div className="border border-gray-400 bg-white">
+                        <div className="grid grid-cols-[120px_1fr_40px] gap-0 border-b border-gray-400 bg-gray-200">
+                          <div className="px-3 py-2 text-[11px] font-bold text-gray-700 uppercase tracking-wider">Tipo</div>
+                          <div className="px-3 py-2 text-[11px] font-bold text-gray-700 uppercase tracking-wider border-l border-gray-400">Número da UC</div>
+                          <div className="px-3 py-2 text-[11px] font-bold text-gray-700 uppercase tracking-wider text-center border-l border-gray-400">Ação</div>
                         </div>
                         
                         <div className="divide-y divide-gray-200">
                           {ucs.map((uc, index) => (
-                            <div key={uc.id} className="grid grid-cols-[120px_1fr_40px] gap-0 bg-white group hover:bg-gray-50 transition-colors">
+                            <div key={uc.id} className="grid grid-cols-[120px_1fr_40px] gap-0 bg-white group hover:bg-gray-100 transition-colors">
                               <div className="p-1.5">
                                 <select 
                                   value={uc.tipo} 
                                   onChange={(e) => handleUCChange(uc.id, 'tipo', e.target.value)} 
-                                  className={`w-full h-full border border-gray-300 text-[11px] font-bold px-2 outline-none cursor-pointer rounded-none focus:ring-1 focus:ring-green-500 ${uc.tipo === 'Geradora' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-blue-50 text-blue-800 border-blue-200'}`}
+                                  className={`w-full h-full border border-gray-400 text-[11px] font-bold px-2 outline-none cursor-pointer rounded-none focus:ring-1 focus:ring-green-500 ${uc.tipo === 'Geradora' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-blue-50 text-blue-800 border-blue-200'}`}
                                 >
                                   <option value="Geradora">Geradora</option>
                                   <option value="Beneficiada">Beneficiada</option>
                                 </select>
                               </div>
                               
-                              <div className="border-l border-gray-200 p-0">
+                              <div className="border-l border-gray-300 p-0">
                                 <input 
                                   type="text" 
                                   value={uc.numero_uc} 
@@ -513,11 +513,11 @@ export function Clientes() {
                                 />
                               </div>
                               
-                              <div className="border-l border-gray-200 flex items-center justify-center bg-white group-hover:bg-gray-50">
+                              <div className="border-l border-gray-300 flex items-center justify-center bg-white group-hover:bg-gray-100">
                                 <button 
                                   type="button" 
                                   onClick={() => index > 0 ? removerUC(uc.id) : null} 
-                                  className={`p-1.5 transition-colors rounded-none ${index > 0 ? 'text-gray-400 hover:text-red-600 cursor-pointer' : 'text-gray-200 cursor-not-allowed'}`}
+                                  className={`p-1.5 transition-colors rounded-none ${index > 0 ? 'text-gray-500 hover:text-red-600 cursor-pointer' : 'text-gray-200 cursor-not-allowed'}`}
                                   title={index > 0 ? "Remover UC" : "UC Principal não pode ser removida"}
                                 >
                                   <Trash2 size={15} strokeWidth={2} />
@@ -534,10 +534,10 @@ export function Clientes() {
                 <div className="space-y-4">
                   
                   {/* NOVO BLOCO: GESTÃO DE CONTRATO E HISTÓRICO */}
-                  <div className="bg-white border border-gray-300">
+                  <div className="bg-white border border-gray-400">
                     <div className={cardHeaderClass}>
                       <h3 className={cardTitleClass}>
-                        <Calendar size={14} className="text-gray-500" /> Gestão de Contrato
+                        <Calendar size={14} className="text-gray-600" /> Gestão de Contrato
                       </h3>
                     </div>
                     <div className="p-4 space-y-4">
@@ -569,7 +569,7 @@ export function Clientes() {
                           type="text" 
                           disabled 
                           value={dataTerminoCalculada || 'Defina a data de início'} 
-                          className="w-full bg-gray-100 border border-gray-300 px-3 py-2 text-[12px] text-gray-700 font-bold rounded-none" 
+                          className="w-full bg-gray-200 border border-gray-400 px-3 py-2 text-[12px] text-gray-700 font-bold rounded-none" 
                         />
                       </div>
                       <div>
@@ -578,30 +578,30 @@ export function Clientes() {
                           type="text" 
                           disabled 
                           value={ultimoRelatorioAuto} 
-                          className={`w-full bg-gray-100 border border-gray-300 px-3 py-2 text-[12px] font-extrabold rounded-none ${ultimoRelatorioAuto === 'Nunca feito' ? 'text-gray-400' : 'text-green-700'}`} 
+                          className={`w-full bg-gray-200 border border-gray-400 px-3 py-2 text-[12px] font-extrabold rounded-none ${ultimoRelatorioAuto === 'Nunca feito' ? 'text-gray-500' : 'text-green-700'}`} 
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white border border-gray-300">
+                  <div className="bg-white border border-gray-400">
                     <div className={cardHeaderClass}>
                       <h3 className={cardTitleClass}>
-                        <Key size={14} className="text-gray-500" /> Credenciais Operacionais
+                        <Key size={14} className="text-gray-600" /> Credenciais Operacionais
                       </h3>
                     </div>
                     <div className="p-4 space-y-4">
                       
-                      <div className="border border-gray-300 bg-white p-3">
-                        <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Zap size={13}/> Portal CPFL</label>
+                      <div className="border border-gray-400 bg-white p-3">
+                        <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Zap size={13}/> Portal CPFL</label>
                         <div className="space-y-2">
                           <input type="text" name="login_cpfl" value={formData.login_cpfl} onChange={handleChange} placeholder="Login ou CPF/CNPJ" className={inputClass} />
                           <input type="text" name="senha_cpfl" value={formData.senha_cpfl} onChange={handleChange} placeholder="Senha de Acesso" className={inputClass} />
                         </div>
                       </div>
 
-                      <div className="border border-gray-300 bg-white p-3">
-                        <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Activity size={13}/> Portal Inversor</label>
+                      <div className="border border-gray-400 bg-white p-3">
+                        <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Activity size={13}/> Portal Inversor</label>
                         <div className="space-y-2">
                           <input type="text" name="plataforma_inversor" value={formData.plataforma_inversor} onChange={handleChange} placeholder="Nome da Plataforma" className={inputClass} />
                           <input type="text" name="login_app" value={formData.login_app} onChange={handleChange} placeholder="Login do Aplicativo" className={inputClass} />

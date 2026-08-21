@@ -19,18 +19,18 @@ export function Login() {
     setLoading(false);
   };
 
-  const inputClass = "w-full bg-white border border-gray-300 px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 rounded-none placeholder:text-gray-400";
-  const labelClass = "block text-[11px] font-bold text-gray-600 mb-1.5 uppercase tracking-wider";
+  const inputClass = "w-full bg-white border border-gray-400 px-3 py-2 text-[13px] text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 rounded-none placeholder:text-gray-500";
+  const labelClass = "block text-[11px] font-bold text-gray-700 mb-1.5 uppercase tracking-wider";
 
   return (
-    <div className="w-full h-screen flex items-center justify-center bg-[#F3F4F6] p-4">
-      <div className="w-full max-w-sm bg-white border border-gray-300 shadow-sm">
-        <div className="p-6 border-b border-gray-200 flex flex-col items-center text-center">
+    <div className="w-full h-screen flex items-center justify-center bg-gray-200 p-4">
+      <div className="w-full max-w-sm bg-white border border-gray-400 shadow-sm">
+        <div className="p-6 border-b border-gray-300 flex flex-col items-center text-center">
           <div className="w-10 h-10 bg-green-700 text-white flex items-center justify-center mb-3">
             <Zap size={20} fill="currentColor" />
           </div>
           <h1 className="text-base font-bold text-gray-800 leading-none">OLSS</h1>
-          <p className="text-[10px] text-gray-500 font-semibold tracking-wider mt-1">OPERACIONAL</p>
+          <p className="text-[10px] text-gray-600 font-semibold tracking-wider mt-1">OPERACIONAL</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
