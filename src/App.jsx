@@ -84,6 +84,7 @@ function App() {
   const [sessao, setSessao] = useState(undefined); // undefined = verificando, null = deslogado
   const [telaAtiva, setTelaAtiva] = useState('dashboard');
   const [menuAberto, setMenuAberto] = useState(true);
+  const [confirmandoSaida, setConfirmandoSaida] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSessao(data.session));
@@ -94,6 +95,14 @@ function App() {
 
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  // Esc fecha a confirmação de saída
+  useEffect(() => {
+    if (!confirmandoSaida) return;
+    const aoTeclar = (e) => { if (e.key === 'Escape') setConfirmandoSaida(false); };
+    window.addEventListener('keydown', aoTeclar);
+    return () => window.removeEventListener('keydown', aoTeclar);
+  }, [confirmandoSaida]);
 
   const selecionarTela = (id) => {
     setTelaAtiva(id);
@@ -171,7 +180,7 @@ function App() {
           <MenuItem id="configuracoes" icon={Settings} label="Configurações" telaAtiva={telaAtiva} onSelect={selecionarTela} />
           <button
             type="button"
-            onClick={() => supabase.auth.signOut()}
+            onClick={() => setConfirmandoSaida(true)}
             className="w-full flex items-center gap-3 px-3 py-2 text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition-colors font-medium text-[13px] cursor-pointer border-l-2 border-transparent"
           >
             <LogOut size={17} strokeWidth={1.8} />
@@ -226,6 +235,58 @@ function App() {
           )}
         </div>
       </main>
+
+      {/* CONFIRMAÇÃO DE SAÍDA — evita deslogar por clique acidental */}
+      {confirmandoSaida && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-[70] flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setConfirmandoSaida(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-confirmar-saida"
+            className="bg-white shadow-2xl border border-gray-400 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 rounded-none"
+          >
+            <div className="flex justify-between items-center p-4 border-b border-gray-400 bg-gray-100">
+              <h3 id="titulo-confirmar-saida" className="font-bold text-[13px] uppercase tracking-wider text-gray-800">Sair do Sistema</h3>
+              <button
+                type="button"
+                onClick={() => setConfirmandoSaida(false)}
+                className="text-gray-600 hover:text-red-600 hover:bg-red-50 p-1.5 transition-colors cursor-pointer border border-transparent hover:border-red-200 rounded-none"
+                title="Fechar"
+              >
+                <X size={16} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            <div className="p-5">
+              <p className="text-[13px] text-gray-700 leading-relaxed">
+                Deseja mesmo encerrar a sessão? Você precisará entrar com e-mail e senha novamente.
+              </p>
+
+              <div className="flex gap-2 mt-5">
+                <button
+                  type="button"
+                  autoFocus
+                  onClick={() => setConfirmandoSaida(false)}
+                  className="flex-1 bg-white border border-gray-400 text-gray-700 px-4 py-2.5 text-[12px] font-bold hover:bg-gray-200 transition-colors cursor-pointer rounded-none"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setConfirmandoSaida(false); supabase.auth.signOut(); }}
+                  className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white px-4 py-2.5 text-[12px] font-bold hover:bg-red-700 transition-colors cursor-pointer rounded-none"
+                >
+                  <LogOut size={14} strokeWidth={2.2} />
+                  Sair
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
